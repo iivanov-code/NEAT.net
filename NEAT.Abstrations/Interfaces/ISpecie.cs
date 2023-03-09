@@ -1,10 +1,11 @@
-﻿using System;
+﻿using NEAT.Net.Abstrations;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NEAT.Abstrations
+namespace NEAT.Net.Abstrations.Interfaces
 {
     public interface ISpecie : IReadOnlyList<IGenome>
     {

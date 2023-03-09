@@ -12,7 +12,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\NEAT.Abstrations\NEAT.Abstrations.csproj" />
+    <ProjectReference Include="..\NEAT.Abstrations\NEAT.Net.Abstrations.csproj" />
   </ItemGroup>
 
 </Project>

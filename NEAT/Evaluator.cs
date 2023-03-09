@@ -1,22 +1,23 @@
-﻿using NEAT.Abstrations;
-using NEAT.Abstrations.Interfaces;
+﻿using NEAT.Net.Abstrations;
+using NEAT.Net.Abstrations.Enums;
+using NEAT.Net.Abstrations.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace NEAT
+namespace NEAT.Net
 {
     public abstract class Evaluator : IEvaluator
     {
         protected Evaluator(IGenome initialGenome, IInnovationGenerator innovationGenerator, ushort populationSize = DefaultConstants.POPULATION_SIZE)
         {
-            this.Genomes = new List<IGenome>(populationSize);
-            this.Species = new List<ISpecie>();
+            Genomes = new List<IGenome>(populationSize);
+            Species = new List<ISpecie>();
 
-            this.InnovationGenerator = innovationGenerator;
-            this.PopulationSize = populationSize;
+            InnovationGenerator = innovationGenerator;
+            PopulationSize = populationSize;
 
-            for (int i = 0; i < this.PopulationSize; i++)
+            for (int i = 0; i < PopulationSize; i++)
             {
                 Genomes.Add(initialGenome.Clone());
             }
@@ -35,7 +36,7 @@ namespace NEAT
 
             foreach (var specie in Species)
             {
-                int count = (int)Math.Floor(((float)specie.Count) * DefaultConstants.PERCENT_OF_DIRECT_OFFSPRING);
+                int count = (int)Math.Floor(specie.Count * DefaultConstants.PERCENT_OF_DIRECT_OFFSPRING);
                 for (int i = 0; i < count; i++)
                 {
                     IGenome genome = specie.Genomes[random.Next(0, specie.Count)];
@@ -44,7 +45,7 @@ namespace NEAT
                 }
             }
 
-            int offspringRate = totalFitness / (PopulationSize - this.Genomes.Count);
+            int offspringRate = totalFitness / (PopulationSize - Genomes.Count);
 
             foreach (var specie in Species)
             {
@@ -114,9 +115,9 @@ namespace NEAT
                 {
                     genome.Fitness = EvaluateGenome(genome);
 
-                    if (this.FittestGenome == null || this.FittestGenome.Fitness < genome.Fitness)
+                    if (FittestGenome == null || FittestGenome.Fitness < genome.Fitness)
                     {
-                        this.FittestGenome = genome;
+                        FittestGenome = genome;
                     }
                 }
             }
@@ -135,17 +136,17 @@ namespace NEAT
         {
             Random random = new Random();
 
-            if (NEATUtils.GetRandomNumber(random, 0, 1) < DefaultConstants.CHANCE_OF_WEIGHTS_MUTATION)
+            if (random.GetRandomNumber(0, 1) < DefaultConstants.CHANCE_OF_WEIGHTS_MUTATION)
             {
                 genome.Mutate(MutationType.AllConnections, InnovationGenerator);
             }
 
-            if (NEATUtils.GetRandomNumber(random, 0, 1) < DefaultConstants.PROBABILITY_OF_ADDING_NEW_LINK)
+            if (random.GetRandomNumber(0, 1) < DefaultConstants.PROBABILITY_OF_ADDING_NEW_LINK)
             {
                 genome.Mutate(MutationType.Connection, InnovationGenerator);
             }
 
-            if (NEATUtils.GetRandomNumber(random, 0, 1) < DefaultConstants.PROBABILITY_OF_ADDING_NEW_NODE)
+            if (random.GetRandomNumber(0, 1) < DefaultConstants.PROBABILITY_OF_ADDING_NEW_NODE)
             {
                 genome.Mutate(MutationType.Node, InnovationGenerator);
             }

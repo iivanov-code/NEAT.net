@@ -1,19 +1,20 @@
-﻿using NEAT.Abstrations;
-using NEAT.Abstrations.Enums;
-using NEAT.Models;
+﻿using NEAT.Net.Abstrations;
+using NEAT.Net.Abstrations.Enums;
+using NEAT.Net.Abstrations.Interfaces;
+using NEAT.Net.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace NEAT
+namespace NEAT.Net
 {
     public class Genome : IGenome
     {
         public Genome()
         {
-            this.ID = NEATUtils.NewID();
-            this.Nodes = new Dictionary<uint, INodeGene>();
-            this.Connections = new Dictionary<uint, IConnectionGene>();
+            ID = NEATUtils.NewID();
+            Nodes = new Dictionary<uint, INodeGene>();
+            Connections = new Dictionary<uint, IConnectionGene>();
         }
 
 
@@ -41,7 +42,7 @@ namespace NEAT
             }
             set
             {
-                this.fitness = value;
+                fitness = value;
                 OnFitnessAssinged();
             }
         }
@@ -52,12 +53,12 @@ namespace NEAT
         {
             Genome genome = new Genome();
 
-            foreach (var connection in this.Connections.Values)
+            foreach (var connection in Connections.Values)
             {
                 genome.Connections.Add(connection.Innovation, connection.Clone());
             }
 
-            foreach (var node in this.Nodes.Values)
+            foreach (var node in Nodes.Values)
             {
                 genome.Nodes.Add(node.Innovation, node.Clone());
             }
@@ -67,7 +68,7 @@ namespace NEAT
 
         public int CompareTo(IGenome other)
         {
-            float distance = this.Fitness - other.Fitness;
+            float distance = Fitness - other.Fitness;
 
             if (distance > 0)
             {
@@ -99,7 +100,7 @@ namespace NEAT
 
             float avgWeightDistance = 0f;
 
-            foreach (var geneDesrc in GetGeneTypes(this.Connections, other.Connections))
+            foreach (var geneDesrc in GetGeneTypes(Connections, other.Connections))
             {
                 switch (geneDesrc.GeneType)
                 {
@@ -118,7 +119,7 @@ namespace NEAT
 
             avgWeightDistance = avgWeightDistance / matchingGenes;
 
-            foreach (var gene in GetGeneTypes(this.Nodes, other.Nodes))
+            foreach (var gene in GetGeneTypes(Nodes, other.Nodes))
             {
                 switch (gene.GeneType)
                 {
@@ -134,15 +135,15 @@ namespace NEAT
                 }
             }
 
-            return ((c1 * excessGenes) / numberGenes) + ((c2 * disjointGenes) / numberGenes) + (c3 * avgWeightDistance);
+            return c1 * excessGenes / numberGenes + c2 * disjointGenes / numberGenes + c3 * avgWeightDistance;
         }
 
         public IGenome Crossover(IGenome other)
         {
             Genome childGenome = new Genome();
 
-            IGenome fittest = this.Fitness > other.Fitness ? this : other;
-            other = this.Fitness < other.Fitness ? this : other;
+            IGenome fittest = Fitness > other.Fitness ? this : other;
+            other = Fitness < other.Fitness ? this : other;
 
             foreach (var node in fittest.Nodes)
             {
@@ -159,7 +160,7 @@ namespace NEAT
 
                 if (gene.GeneType == GeneType.Matching && !gene.Gene.Enabled && !gene.MatchingGene.Enabled)
                 {
-                    if (NEATUtils.GetRandomNumber(random, 0, 1) > DefaultConstants.DISABLED_WEIGHT_CHANCE)
+                    if (random.GetRandomNumber(0, 1) > DefaultConstants.DISABLED_WEIGHT_CHANCE)
                     {
                         connection.Enable();
                     }
@@ -281,8 +282,8 @@ namespace NEAT
                 toNode = Nodes.GetElementAt(rand.Next(0, Nodes.Count));
             } while (fromNode == toNode || fromNode.Type == toNode.Type);
 
-            bool hasConnection = Connections.Where(x => (x.Value.Input.Innovation == fromNode.Innovation && x.Value.Output.Innovation == toNode.Innovation)
-              || (x.Value.Input.Innovation == toNode.Innovation && x.Value.Output.Innovation == fromNode.Innovation)).Any();
+            bool hasConnection = Connections.Where(x => x.Value.Input.Innovation == fromNode.Innovation && x.Value.Output.Innovation == toNode.Innovation
+              || x.Value.Input.Innovation == toNode.Innovation && x.Value.Output.Innovation == fromNode.Innovation).Any();
 
             if (!hasConnection)
             {
@@ -291,7 +292,7 @@ namespace NEAT
                     NEATUtils.Swap(ref fromNode, ref toNode);
                 }
 
-                float weight = NEATUtils.GetRandomNumber(new Random(), 0, 1);
+                float weight = new Random().GetRandomNumber(0, 1);
                 IConnectionGene connection = new ConnectionGene(generator.GetConnectionInnovationNumber(fromNode.Innovation, toNode.Innovation), fromNode, toNode, weight);
                 Connections.Add(connection.Innovation, connection);
             }
@@ -302,7 +303,7 @@ namespace NEAT
             INodeGene newNode = new NodeGene((uint)Nodes.Count, NodeType.Hidden);
             var random = new Random();
             int index = random.Next(0, Connections.Count);
-            IConnectionGene connection = this.Connections.GetElementAt(index);
+            IConnectionGene connection = Connections.GetElementAt(index);
 
             connection.Disable();
 
@@ -330,14 +331,14 @@ namespace NEAT
             Random random = new Random();
             foreach (var connection in Connections.Select(x => x.Value))
             {
-                if (NEATUtils.GetRandomNumber(random, 0, 1) < DefaultConstants.PERTURBED_CHANCE)
+                if (random.GetRandomNumber(0, 1) < DefaultConstants.PERTURBED_CHANCE)
                 {
                     float distance = 1 - Math.Abs(connection.Weight);
-                    connection.Weight += NEATUtils.GetRandomNumber(random, -1 * distance, distance);
+                    connection.Weight += random.GetRandomNumber(-1 * distance, distance);
                 }
                 else
                 {
-                    connection.Weight = NEATUtils.GetRandomNumber(random, 0, 1);
+                    connection.Weight = random.GetRandomNumber(0, 1);
                 }
             }
         }

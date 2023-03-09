@@ -1,11 +1,11 @@
-﻿using NEAT.Abstrations;
+﻿using NEAT.Net.Abstrations.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NEAT
+namespace NEAT.Net
 {
     public class InnovationGenerator : IInnovationGenerator
     {

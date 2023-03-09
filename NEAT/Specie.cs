@@ -1,4 +1,5 @@
-﻿using NEAT.Abstrations;
+﻿using NEAT.Net.Abstrations;
+using NEAT.Net.Abstrations.Interfaces;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -6,15 +7,15 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NEAT
+namespace NEAT.Net
 {
     public class Specie : ISpecie
     {
         public Specie(IGenome genome)
         {
-            this.Genomes = new List<IGenome>();
-            this.Genomes.Add(genome);
-            this.Mascot = genome;
+            Genomes = new List<IGenome>();
+            Genomes.Add(genome);
+            Mascot = genome;
         }
 
         public IGenome this[int index] => Genomes[index];

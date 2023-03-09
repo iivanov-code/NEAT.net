@@ -1,9 +1,9 @@
-﻿using NEAT.Abstrations.Interfaces;
+﻿using NEAT.Net.Abstrations.Enums;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 
-namespace NEAT.Abstrations
+namespace NEAT.Net.Abstrations.Interfaces
 {
     public interface IGenome : IComparable<IGenome>, ICloneable<IGenome>
     {

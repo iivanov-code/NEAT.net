@@ -1,13 +1,14 @@
-﻿using System;
+﻿using NEAT.Net.Abstrations.Interfaces;
+using System;
 
-namespace NEAT.Abstrations
+namespace NEAT.Net.Abstrations
 {
     public class FitnessAssignedEventArgs : EventArgs
     {
         public readonly IGenome Genome;
         public FitnessAssignedEventArgs(IGenome genome)
         {
-            this.Genome = genome;
+            Genome = genome;
         }
     }
 }

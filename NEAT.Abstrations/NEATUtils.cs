@@ -1,10 +1,11 @@
-﻿using System;
+﻿using NEAT.Net.Abstrations;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NEAT.Abstrations
+namespace NEAT.Net.Abstrations
 {
     public static class NEATUtils
     {
@@ -12,10 +13,10 @@ namespace NEAT.Abstrations
         private static uint Id = 0;
         public static uint NewID()
         {
-            uint id = NEATUtils.Id;
+            uint id = Id;
             lock (idPadlock)
             {
-                NEATUtils.Id++;
+                Id++;
             }
 
             return id;
@@ -36,13 +37,13 @@ namespace NEAT.Abstrations
 
         public static float GetRandomNumber(this Random rand, float minimum, float maximum, int decimals = 2)
         {
-            float value = (float)((rand.NextDouble() * (maximum - minimum)) + minimum);
+            float value = (float)(rand.NextDouble() * (maximum - minimum) + minimum);
             return (float)Math.Round(value, decimals, MidpointRounding.AwayFromZero);
         }
 
         public static bool GetRandomBool(this Random rand)
         {
-            return GetRandomNumber(rand, 0, 1) > 0.5f ? true : false;
+            return rand.GetRandomNumber(0, 1) > 0.5f ? true : false;
         }
 
         public static TValue GetElementAt<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, int index)

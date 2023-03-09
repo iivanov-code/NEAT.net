@@ -1,4 +1,4 @@
-﻿namespace NEAT.Abstrations
+﻿namespace NEAT.Net.Abstrations
 {
     public static class DefaultConstants
     {

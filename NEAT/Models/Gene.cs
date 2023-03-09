@@ -1,11 +1,11 @@
-﻿using NEAT.Abstrations.Enums;
+﻿using NEAT.Net.Abstrations.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NEAT.Models
+namespace NEAT.Net.Models
 {
     internal class GeneCompareType<T>
     {

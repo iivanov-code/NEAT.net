@@ -1,13 +1,14 @@
-﻿using NEAT.Abstrations;
+﻿using NEAT.Net.Abstrations.Enums;
+using NEAT.Net.Abstrations.Interfaces;
 
-namespace NEAT
+namespace NEAT.Net
 {
     public class NodeGene : INodeGene
     {
         public NodeGene(uint innovation, NodeType type)
         {
-            this.Innovation = innovation;
-            this.Type = type;
+            Innovation = innovation;
+            Type = type;
         }
 
         public NodeType Type { get; private init; }
@@ -16,7 +17,7 @@ namespace NEAT
 
         public INodeGene Clone()
         {
-            return new NodeGene(this.Innovation, this.Type);
+            return new NodeGene(Innovation, Type);
         }
     }
 }

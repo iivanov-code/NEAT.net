@@ -1,16 +1,16 @@
-﻿using NEAT.Abstrations;
+﻿using NEAT.Net.Abstrations.Interfaces;
 
-namespace NEAT
+namespace NEAT.Net
 {
     public class ConnectionGene : IConnectionGene
     {
         public ConnectionGene(uint innovation, INodeGene input, INodeGene output, float weight)
         {
-            this.Weight = weight;
-            this.Innovation = innovation;
-            this.Input = input;
-            this.Output = output;
-            this.Enabled = true;
+            Weight = weight;
+            Innovation = innovation;
+            Input = input;
+            Output = output;
+            Enabled = true;
         }
 
         private INodeGene input;

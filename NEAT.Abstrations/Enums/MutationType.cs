@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NEAT.Abstrations
+namespace NEAT.Net.Abstrations.Enums
 {
     public enum MutationType
     {
