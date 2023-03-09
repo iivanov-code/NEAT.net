@@ -1,6 +1,6 @@
-﻿using NEAT.Net.Abstrations.Enums;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using NEAT.Net.Abstrations.Enums;
 
 namespace NEAT.Net.Abstrations.Interfaces
 {

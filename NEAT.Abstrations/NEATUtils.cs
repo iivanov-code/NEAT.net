@@ -1,6 +1,6 @@
-﻿using NEAT.Net.Abstrations;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using NEAT.Net.Abstrations;
 
 namespace NEAT.Net.Abstrations
 {

@@ -1,5 +1,5 @@
-﻿using NEAT.Net.Abstrations.Interfaces;
-using System;
+﻿using System;
+using NEAT.Net.Abstrations.Interfaces;
 
 namespace NEAT.Net.Abstrations
 {

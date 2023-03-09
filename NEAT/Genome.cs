@@ -1,10 +1,10 @@
-﻿using NEAT.Net.Abstrations;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using NEAT.Net.Abstrations;
 using NEAT.Net.Abstrations.Enums;
 using NEAT.Net.Abstrations.Interfaces;
 using NEAT.Net.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace NEAT.Net
 {

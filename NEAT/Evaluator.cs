@@ -1,9 +1,9 @@
-﻿using NEAT.Net.Abstrations;
-using NEAT.Net.Abstrations.Enums;
-using NEAT.Net.Abstrations.Interfaces;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using NEAT.Net.Abstrations;
+using NEAT.Net.Abstrations.Enums;
+using NEAT.Net.Abstrations.Interfaces;
 
 namespace NEAT.Net
 {
