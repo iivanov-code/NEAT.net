@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using NEAT.Abstrations;
+﻿using NEAT.Abstrations;
 
 namespace NEAT
 {
@@ -68,6 +63,11 @@ namespace NEAT
         public void Disable()
         {
             Enabled = false;
+        }
+
+        public void Enable()
+        {
+            Enabled = true;
         }
     }
 }
