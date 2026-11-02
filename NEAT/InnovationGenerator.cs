@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Threading;
 using NEAT.Net.Abstrations.Interfaces;
 
 namespace NEAT.Net
@@ -10,7 +11,7 @@ namespace NEAT.Net
     /// </summary>
     public class InnovationGenerator : IInnovationGenerator
     {
-        private readonly object padlock = new object();
+        private readonly Lock padlock = new Lock();
         private readonly Dictionary<(uint From, uint To), uint> connections = new Dictionary<(uint From, uint To), uint>();
         private readonly Dictionary<uint, uint> splitNodes = new Dictionary<uint, uint>();
         private uint connectionCounter = 0;

@@ -149,7 +149,7 @@ namespace NEAT.Net
 
             float averageWeightDifference = matchingGenes > 0 ? weightDifference / matchingGenes : 0f;
 
-            return c1 * excessGenes / numberGenes + c2 * disjointGenes / numberGenes + c3 * averageWeightDifference;
+            return (c1 * excessGenes / numberGenes) + (c2 * disjointGenes / numberGenes) + (c3 * averageWeightDifference);
         }
 
         /// <summary>
@@ -163,7 +163,8 @@ namespace NEAT.Net
             Random random = NEATUtils.Random;
             IGenome fittest, weakest;
 
-            if (Fitness > other.Fitness || (Fitness == other.Fitness && random.GetRandomBool()))
+            int comparison = Fitness.CompareTo(other.Fitness);
+            if (comparison > 0 || (comparison == 0 && random.GetRandomBool()))
             {
                 fittest = this;
                 weakest = other;
@@ -343,9 +344,10 @@ namespace NEAT.Net
                 uint node = stack.Pop();
                 if (node == to) return true;
 
-                foreach (uint next in successors[node])
+                foreach (uint next in successors[node].Where(x => !visited.Contains(x)))
                 {
-                    if (visited.Add(next)) stack.Push(next);
+                    visited.Add(next);
+                    stack.Push(next);
                 }
             }
 

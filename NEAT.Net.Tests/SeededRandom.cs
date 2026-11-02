@@ -21,10 +21,4 @@ namespace NEAT.Net.Tests
             NEATUtils.Random = previous;
         }
     }
-
-    [Xunit.CollectionDefinition(Name, DisableParallelization = true)]
-    public sealed class RandomCollection
-    {
-        public const string Name = "NEAT random source";
-    }
 }

@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
 
 namespace NEAT.Net.Abstrations
 {
+    [SuppressMessage("Minor Code Smell", "S101:Types should be named in PascalCase", Justification = "Public API named after the NEAT acronym")]
     public static class NEATUtils
     {
         private static int id = -1;
@@ -37,7 +39,7 @@ namespace NEAT.Net.Abstrations
         /// </summary>
         public static float NextFloat(this Random rand, float minimum, float maximum)
         {
-            return (float)(rand.NextDouble() * (maximum - minimum) + minimum);
+            return (float)((rand.NextDouble() * (maximum - minimum)) + minimum);
         }
 
         public static float GetRandomNumber(this Random rand, float minimum, float maximum, int decimals = 2)

@@ -73,7 +73,7 @@ namespace NEAT.Net.Tests
             }
 
             // 3 matching genes that differ by 1, two excess genes; N = 1 for small genomes
-            Assert.Equal(2 * DefaultConstants.C1 + DefaultConstants.C3 * 1f, first.CompatibilityDistance(second), 4);
+            Assert.Equal((2 * DefaultConstants.C1) + (DefaultConstants.C3 * 1f), first.CompatibilityDistance(second), 4);
             Assert.Equal(first.CompatibilityDistance(second), second.CompatibilityDistance(first), 4);
         }
 

@@ -89,10 +89,7 @@ namespace NEAT.Net
 
             foreach (var genome in Genomes)
             {
-                if (!Species.Any(x => x.TryAddGenome(genome, CompatibilityThreshold)))
-                {
-                    Species.Add(new Specie(genome));
-                }
+                AssignToSpecie(genome);
             }
 
             Species = Species.Where(x => x.Count > 0).ToList();
@@ -167,6 +164,14 @@ namespace NEAT.Net
             {
                 // a snapshot, so later generations cannot change it
                 FittestGenome = genome.Clone();
+            }
+        }
+
+        private void AssignToSpecie(IGenome genome)
+        {
+            if (!Species.Any(x => x.TryAddGenome(genome, CompatibilityThreshold)))
+            {
+                Species.Add(new Specie(genome));
             }
         }
 

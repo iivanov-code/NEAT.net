@@ -13,13 +13,9 @@ namespace NEAT.Net
             Enabled = enabled;
         }
 
-        private INodeGene input;
         public INodeGene Input
         {
-            get
-            {
-                return input;
-            }
+            get;
             set
             {
                 if (value == null)
@@ -27,17 +23,13 @@ namespace NEAT.Net
                     Enabled = false;
                 }
 
-                input = value;
+                field = value;
             }
         }
 
-        private INodeGene output;
         public INodeGene Output
         {
-            get
-            {
-                return output;
-            }
+            get;
             set
             {
                 if (value == null)
@@ -45,7 +37,7 @@ namespace NEAT.Net
                     Enabled = false;
                 }
 
-                output = value;
+                field = value;
             }
         }
 

@@ -37,7 +37,7 @@ namespace NEAT.Net.Tests
 
             IGraphNetwork network = genome.ToNetwork(Linear);
 
-            Assert.Equal(2 * 1.5f - 3 * 2 + 0.5f, network.Propagate(1.5f, 2)[0], 4);
+            Assert.Equal((2 * 1.5f) - (3 * 2) + 0.5f, network.Propagate(1.5f, 2)[0], 4);
             Assert.Equal(0.5f, network.Propagate(0, 0)[0], 4);
         }
 
@@ -51,7 +51,7 @@ namespace NEAT.Net.Tests
             IGraphNetwork network = genome.ToNetwork(Linear);
 
             // with linear activations the split keeps the function unchanged (weights 1 and the old weight)
-            Assert.Equal(2 * 1.5f - 3 * 2 + 0.5f, network.Propagate(1.5f, 2)[0], 4);
+            Assert.Equal((2 * 1.5f) - (3 * 2) + 0.5f, network.Propagate(1.5f, 2)[0], 4);
             Assert.Single(network.HiddenNodeIds);
             Assert.Equal(genome.Connections.Values.Count(x => x.Enabled), network.ConnectionWeights.Count);
         }

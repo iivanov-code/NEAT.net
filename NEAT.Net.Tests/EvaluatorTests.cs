@@ -61,7 +61,7 @@ namespace NEAT.Net.Tests
             }
 
             Assert.Equal(30u, evaluator.Generation);
-            Assert.True(evaluator.FittestGenome.Fitness > 2 * 4 + 5);
+            Assert.True(evaluator.FittestGenome.Fitness > (2 * 4) + 5);
         }
 
         [Fact]
