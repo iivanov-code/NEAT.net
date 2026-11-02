@@ -17,7 +17,8 @@ namespace NEAT.Net.Networks
         /// <summary>
         /// Describes the genome as a graph: node genes become neurons with the same id and enabled connection genes
         /// become synapses with the innovation number as id. Inputs and outputs are ordered by node id, which for
-        /// <see cref="Genome.CreateMinimal"/> is the order they were created in
+        /// <see cref="Genome.CreateMinimal"/> is the order they were created in. Every node gets the activation of
+        /// its gene; nodes without one get the activation of <paramref name="settings"/> for their type
         /// </summary>
         public static GraphNetworkSettings ToGraphSettings(this IGenome genome, PhenotypeSettings settings = null)
         {
@@ -28,7 +29,7 @@ namespace NEAT.Net.Networks
             {
                 Nodes = genome.Nodes.Values
                               .OrderBy(x => x.Innovation)
-                              .Select(x => new GraphNode(x.Innovation, ToAnnNodeType(x.Type)))
+                              .Select(x => new GraphNode(x.Innovation, ToAnnNodeType(x.Type), x.Activation))
                               .ToList(),
                 Connections = genome.Connections.Values
                                     .OrderBy(x => x.Innovation)

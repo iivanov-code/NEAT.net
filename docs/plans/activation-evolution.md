@@ -74,7 +74,15 @@ The activation set and its probabilities must be configurable per run, but all p
 
 `DefaultConstants` stays for compatibility and supplies the defaults.
 
-## Phase 2 – Activation in the genome
+## Phase 2 – Activation in the genome – done
+
+- `INodeGene.Activation` is a nullable `ActivationTypes`. Input and bias nodes, and genes loaded from
+  version 1 files, have none and use the `PhenotypeSettings` activation of their type.
+- Outputs of `CreateMinimal` and new hidden nodes get their activation from the settings. A list with one entry
+  draws no random number, so default runs are unchanged: identical to phase 1 over 5 seeds × 40 XOR generations.
+- Genome and checkpoint files are version 2, with an optional `activation`; version 1 files still load.
+- Crossover copies the nodes, and so the activations, of the fitter parent. Inheriting activations from both
+  parents is phase 5.
 
 1. **Gene:** add `ActivationTypes Activation { get; set; }` to `INodeGene` / `NodeGene`
    (`NEAT.Abstrations/Interfaces/INodeGene.cs`, `NEAT/NodeGene.cs`).

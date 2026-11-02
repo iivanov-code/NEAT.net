@@ -121,7 +121,7 @@ namespace NEAT.Net.Tests
 
             Assert.Throws<InvalidDataException>(() => LoadText("not json"));
             Assert.Throws<InvalidDataException>(() => LoadText("{ \"format\": \"something else\", \"version\": 1 }"));
-            Assert.Throws<InvalidDataException>(() => LoadText(json.Replace("\"version\": 1", "\"version\": 2", StringComparison.Ordinal)));
+            Assert.Throws<InvalidDataException>(() => LoadText(json.Replace("\"version\": 2", "\"version\": 99", StringComparison.Ordinal)));
             Assert.Throws<InvalidDataException>(() => LoadText(json.Replace("\"from\": ", "\"from\": 9999", StringComparison.Ordinal)));
         }
 

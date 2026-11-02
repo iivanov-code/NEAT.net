@@ -5,6 +5,7 @@ using NEAT.Net.Abstrations;
 using NEAT.Net.Abstrations.Enums;
 using NEAT.Net.Abstrations.Interfaces;
 using NEAT.Net.Models;
+using ActivationTypes = ANN.Net.Abstractions.Enums.ActivationTypes;
 
 namespace NEAT.Net
 {
@@ -18,7 +19,8 @@ namespace NEAT.Net
         }
 
         /// <summary>
-        /// Minimal starting genome: every input (and the bias) connected directly to every output, without hidden nodes
+        /// Minimal starting genome: every input (and the bias) connected directly to every output, without hidden nodes.
+        /// Outputs get an activation of <see cref="NeatSettings.OutputActivations"/>
         /// </summary>
         public static Genome CreateMinimal(int inputsCount, int outputsCount, IInnovationGenerator generator, bool withBias = true, NeatSettings settings = null)
         {
@@ -43,7 +45,7 @@ namespace NEAT.Net
 
             for (int i = 0; i < outputsCount; i++)
             {
-                outputs.Add(genome.AddNode(generator.NewNodeInnovationNumber(), NodeType.Output));
+                outputs.Add(genome.AddNode(generator.NewNodeInnovationNumber(), NodeType.Output, PickActivation(settings.OutputActivations)));
             }
 
             foreach (INodeGene from in sources)
@@ -257,7 +259,7 @@ namespace NEAT.Net
                     AddConnectionMutation(generator, settings);
                     break;
                 case MutationType.Node:
-                    AddNodeMutation(generator);
+                    AddNodeMutation(generator, settings);
                     break;
                 case MutationType.AllConnections:
                     MutateAllConnections(settings);
@@ -310,9 +312,18 @@ namespace NEAT.Net
             return NEATUtils.Random.NextFloat(-settings.InitialWeightRange, settings.InitialWeightRange);
         }
 
-        private INodeGene AddNode(uint innovation, NodeType type)
+        /// <summary>
+        /// Random activation of the list; a list with one entry draws no random number, so runs with a single
+        /// activation follow the same random sequence as before activations were part of genes
+        /// </summary>
+        private static ActivationTypes PickActivation(IList<ActivationTypes> activations)
         {
-            INodeGene node = new NodeGene(innovation, type);
+            return activations.Count == 1 ? activations[0] : activations[NEATUtils.Random.Next(activations.Count)];
+        }
+
+        private INodeGene AddNode(uint innovation, NodeType type, ActivationTypes? activation = null)
+        {
+            INodeGene node = new NodeGene(innovation, type, activation);
             Nodes.Add(innovation, node);
             return node;
         }
@@ -387,9 +398,10 @@ namespace NEAT.Net
 
         /// <summary>
         /// Splits an enabled connection: the old connection is disabled, the connection into the new node gets
-        /// weight 1 and the connection out of it the old weight, so the network behaves almost as before
+        /// weight 1 and the connection out of it the old weight, so the network behaves almost as before.
+        /// The new node gets a random activation of <see cref="NeatSettings.HiddenActivations"/>
         /// </summary>
-        private void AddNodeMutation(IInnovationGenerator generator)
+        private void AddNodeMutation(IInnovationGenerator generator, NeatSettings settings)
         {
             List<IConnectionGene> enabled = Connections.Values.Where(x => x.Enabled).ToList();
             if (enabled.Count == 0) return;
@@ -404,7 +416,7 @@ namespace NEAT.Net
             }
 
             connection.Disable();
-            INodeGene newNode = AddNode(nodeId, NodeType.Hidden);
+            INodeGene newNode = AddNode(nodeId, NodeType.Hidden, PickActivation(settings.HiddenActivations));
 
             uint innovation = generator.GetConnectionInnovationNumber(connection.Input.Innovation, newNode.Innovation);
             Connections.Add(innovation, new ConnectionGene(innovation, connection.Input, newNode, 1f));

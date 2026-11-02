@@ -5,6 +5,7 @@ using System.Linq;
 using ActivationTypes = ANN.Net.Abstractions.Enums.ActivationTypes;
 using ANN.Net.Abstractions.Interfaces;
 using ANN.Net.Abstractions.Optimizers;
+using NEAT.Net.Abstrations;
 using NEAT.Net.Abstrations.Enums;
 using NEAT.Net.Abstrations.Interfaces;
 using NEAT.Net.Networks;
@@ -21,10 +22,19 @@ namespace NEAT.Net.Tests
             OutputActivationType = ActivationTypes.Identity
         };
 
+        /// <summary>
+        /// New genes get linear activations, so the network computes plain weighted sums
+        /// </summary>
+        private static readonly NeatSettings LinearGenes = new NeatSettings
+        {
+            HiddenActivations = new[] { ActivationTypes.Identity },
+            OutputActivations = new[] { ActivationTypes.Identity }
+        };
+
         private static (Genome Genome, InnovationGenerator Generator) TwoInputsOneOutput(float w0, float w1, float bias)
         {
             var generator = new InnovationGenerator();
-            Genome genome = Genome.CreateMinimal(2, 1, generator);
+            Genome genome = Genome.CreateMinimal(2, 1, generator, settings: LinearGenes);
             IConnectionGene[] connections = genome.Connections.Values.OrderBy(x => x.Innovation).ToArray();
             connections[0].Weight = w0;
             connections[1].Weight = w1;
@@ -49,7 +59,7 @@ namespace NEAT.Net.Tests
             using var seed = new SeededRandom(7);
             var (genome, generator) = TwoInputsOneOutput(2, -3, 0.5f);
 
-            genome.Mutate(MutationType.Node, generator);
+            genome.Mutate(MutationType.Node, generator, LinearGenes);
             IGraphNetwork network = genome.ToNetwork(Linear);
 
             // with linear activations the split keeps the function unchanged (weights 1 and the old weight)
@@ -63,7 +73,7 @@ namespace NEAT.Net.Tests
         {
             using var seed = new SeededRandom(8);
             var (genome, generator) = TwoInputsOneOutput(1, 1, 0);
-            genome.Mutate(MutationType.Node, generator);
+            genome.Mutate(MutationType.Node, generator, LinearGenes);
 
             INodeGene hidden = genome.Nodes.Values.Single(x => x.Type == NodeType.Hidden);
             genome.Connections.Values.Single(x => x.Input == hidden).Disable();

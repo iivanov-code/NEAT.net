@@ -10,8 +10,16 @@ namespace NEAT.Net.Networks
     {
         public ActivationTypes InputActivationType { get; set; } = ActivationTypes.Identity;
 
+        /// <summary>
+        /// Activation of hidden nodes whose gene has none (genomes saved before activations were part of genes).
+        /// New hidden nodes get theirs from <c>NeatSettings.HiddenActivations</c>
+        /// </summary>
         public ActivationTypes HiddenActivationType { get; set; } = ActivationTypes.Sigmoid;
 
+        /// <summary>
+        /// Activation of output nodes whose gene has none (genomes saved before activations were part of genes).
+        /// New genomes get theirs from <c>NeatSettings.OutputActivations</c>
+        /// </summary>
         public ActivationTypes OutputActivationType { get; set; } = ActivationTypes.Sigmoid;
 
         /// <summary>

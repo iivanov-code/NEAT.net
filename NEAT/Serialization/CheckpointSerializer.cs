@@ -13,7 +13,10 @@ namespace NEAT.Net.Serialization
     internal static class CheckpointSerializer
     {
         private const string FormatName = "NEAT.Net checkpoint";
-        private const int FormatVersion = 1;
+        /// <summary>
+        /// Version 2 holds genomes with node activations (genome format 2); version 1 checkpoints still load
+        /// </summary>
+        private const int FormatVersion = 2;
 
         public static void Save(Stream stream, CheckpointState state)
         {
@@ -63,7 +66,7 @@ namespace NEAT.Net.Serialization
 
             if (document == null || !string.Equals(document.Format, FormatName, StringComparison.Ordinal))
                 throw new InvalidDataException("The file is not a NEAT.Net checkpoint");
-            if (document.Version != FormatVersion)
+            if (document.Version < 1 || document.Version > FormatVersion)
                 throw new InvalidDataException($"Unsupported checkpoint file version {document.Version}");
             if (document.Innovations == null)
                 throw new InvalidDataException("The checkpoint has no innovation history");

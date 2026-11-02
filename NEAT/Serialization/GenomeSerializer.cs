@@ -19,7 +19,10 @@ namespace NEAT.Net
     public static class GenomeSerializer
     {
         private const string FormatName = "NEAT.Net genome";
-        private const int FormatVersion = 1;
+        /// <summary>
+        /// Version 2 added the activation of node genes; version 1 files still load
+        /// </summary>
+        internal const int FormatVersion = 2;
 
         internal static readonly JsonSerializerOptions JsonOptions = new JsonSerializerOptions
         {
@@ -60,7 +63,7 @@ namespace NEAT.Net
 
             if (document == null || !string.Equals(document.Format, FormatName, StringComparison.Ordinal))
                 throw new InvalidDataException("The file is not a NEAT.Net genome");
-            if (document.Version != FormatVersion)
+            if (document.Version < 1 || document.Version > FormatVersion)
                 throw new InvalidDataException($"Unsupported genome file version {document.Version}");
 
             return FromDocument(document.Genome);
@@ -88,7 +91,7 @@ namespace NEAT.Net
                 // genes keep the order of the genome: mutations pick genes by position, so a loaded genome
                 // evolves exactly like the original for the same random numbers
                 Nodes = genome.Nodes.Values
-                              .Select(x => new NodeGeneDocument { Id = x.Innovation, Type = x.Type })
+                              .Select(x => new NodeGeneDocument { Id = x.Innovation, Type = x.Type, Activation = x.Activation })
                               .ToList(),
                 Connections = genome.Connections.Values
                                     .Select(x => new ConnectionGeneDocument
@@ -111,9 +114,9 @@ namespace NEAT.Net
 
             foreach (NodeGeneDocument node in document.Nodes ?? new List<NodeGeneDocument>())
             {
-                if (node == null || !Enum.IsDefined(node.Type))
+                if (node == null || !Enum.IsDefined(node.Type) || (node.Activation.HasValue && !Enum.IsDefined(node.Activation.Value)))
                     throw new InvalidDataException("Invalid node gene");
-                if (!genome.Nodes.TryAdd(node.Id, new NodeGene(node.Id, node.Type)))
+                if (!genome.Nodes.TryAdd(node.Id, new NodeGene(node.Id, node.Type, node.Activation)))
                     throw new InvalidDataException($"Duplicate node gene {node.Id}");
             }
 

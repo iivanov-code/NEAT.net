@@ -73,6 +73,19 @@ evaluator.Settings.AddNodeRate = 0.01f;      // used from the next generation on
 ```
 
 (`XorEvaluator` then needs a constructor that passes `NeatSettings` on to `base(genome, generator, settings)`.)
+
+Every node gene carries its own activation. New hidden nodes get a random one of `HiddenActivations`, and outputs
+one of `OutputActivations` (both `Sigmoid` by default):
+
+```csharp
+var settings = new NeatSettings
+{
+    HiddenActivations = new List<ActivationTypes> { ActivationTypes.Sigmoid, ActivationTypes.Gaussian, ActivationTypes.Sinusoid },
+    OutputActivations = new List<ActivationTypes> { ActivationTypes.Sigmoid }
+};
+```
+
+Assign new lists as above: the lists already hold `Sigmoid`, so `HiddenActivations = { ... }` would add to it.
 Invalid values are rejected with an `ArgumentException` when the evaluator starts and before every generation.
 
 ### Saving and exporting
@@ -114,6 +127,7 @@ New mutations of a loaded genome need an innovation generator that knows its inn
 one restored by `LoadCheckpoint`. To continue with different parameters, change `resumed.Settings` after loading.
 The random number sequence is not part of a checkpoint.
 
-`genome.ToNetwork(settings)` turns any genome into an ANN.Net network (`PhenotypeSettings` chooses the
-activations and optimizer). The network can also be trained with backpropagation and its weights written back
-with `genome.ApplyWeights(network)`.
+`genome.ToNetwork(settings)` turns any genome into an ANN.Net network. Every node uses the activation of its
+gene; `PhenotypeSettings` chooses the input activation, the optimizer, and the activation of genes without one
+(genomes saved by older versions). The network can also be trained with backpropagation and its weights written
+back with `genome.ApplyWeights(network)`.
