@@ -56,6 +56,14 @@ best.Save(@"C:\models", "xor");                                         // write
 IGraphNetwork loaded = NetworkSerializer.Load<IGraphNetwork>(@"C:\models\xor.ann");
 ```
 
+To run the network outside .NET (Python, C++, the browser, mobile), export it to ONNX and load it with
+ONNX Runtime or any other ONNX tool. The model has one float input `input` of shape `[batch, inputs]` and
+one float output `output` of shape `[batch, outputs]`:
+
+```csharp
+OnnxExporter.Export(best, @"C:\models\xor.onnx");
+```
+
 `genome.ToNetwork(settings)` turns any genome into an ANN.Net network (`PhenotypeSettings` chooses the
 activations and optimizer). The network can also be trained with backpropagation and its weights written back
 with `genome.ApplyWeights(network)`.
