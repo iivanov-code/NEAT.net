@@ -16,6 +16,17 @@ namespace NEAT.Net
             BestFitness = float.MinValue;
         }
 
+        /// <summary>
+        /// Restores a specie from a checkpoint
+        /// </summary>
+        internal Specie(IGenome mascot, IEnumerable<IGenome> members, float bestFitness, int stagnation)
+        {
+            Genomes = new List<IGenome>(members);
+            Mascot = mascot;
+            BestFitness = bestFitness;
+            Stagnation = stagnation;
+        }
+
         public IGenome this[int index] => Genomes[index];
 
         public IList<IGenome> Genomes { get; private init; }

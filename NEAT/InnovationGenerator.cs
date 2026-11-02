@@ -1,6 +1,9 @@
 ﻿using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Threading;
 using NEAT.Net.Abstrations.Interfaces;
+using NEAT.Net.Serialization;
 
 namespace NEAT.Net
 {
@@ -51,6 +54,47 @@ namespace NEAT.Net
             {
                 return nodeCounter++;
             }
+        }
+
+        internal InnovationDocument ToDocument()
+        {
+            lock (padlock)
+            {
+                return new InnovationDocument
+                {
+                    NextConnection = connectionCounter,
+                    NextNode = nodeCounter,
+                    Connections = connections.OrderBy(x => x.Value)
+                                             .Select(x => new ConnectionInnovationDocument { From = x.Key.From, To = x.Key.To, Innovation = x.Value })
+                                             .ToList(),
+                    Splits = splitNodes.OrderBy(x => x.Key)
+                                       .Select(x => new SplitInnovationDocument { Connection = x.Key, Node = x.Value })
+                                       .ToList()
+                };
+            }
+        }
+
+        internal static InnovationGenerator FromDocument(InnovationDocument document)
+        {
+            var generator = new InnovationGenerator
+            {
+                connectionCounter = document.NextConnection,
+                nodeCounter = document.NextNode
+            };
+
+            foreach (ConnectionInnovationDocument connection in document.Connections ?? new List<ConnectionInnovationDocument>())
+            {
+                if (connection.Innovation >= document.NextConnection || !generator.connections.TryAdd((connection.From, connection.To), connection.Innovation))
+                    throw new InvalidDataException($"Invalid connection innovation {connection.Innovation}");
+            }
+
+            foreach (SplitInnovationDocument split in document.Splits ?? new List<SplitInnovationDocument>())
+            {
+                if (split.Node >= document.NextNode || !generator.splitNodes.TryAdd(split.Connection, split.Node))
+                    throw new InvalidDataException($"Invalid node innovation {split.Node}");
+            }
+
+            return generator;
         }
     }
 }

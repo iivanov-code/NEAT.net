@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using NEAT.Net.Abstrations;
 using NEAT.Net.Abstrations.Enums;
 using NEAT.Net.Abstrations.Interfaces;
+using NEAT.Net.Serialization;
 
 namespace NEAT.Net
 {
@@ -41,7 +43,7 @@ namespace NEAT.Net
 
         public IGenome FittestGenome { get; protected set; }
         public ICollection<IGenome> Genomes { get; private set; }
-        public IInnovationGenerator InnovationGenerator { get; private init; }
+        public IInnovationGenerator InnovationGenerator { get; private set; }
         public ushort PopulationSize { get; private set; }
         public ICollection<ISpecie> Species { get; private set; }
         public uint Generation { get; private set; }
@@ -54,6 +56,54 @@ namespace NEAT.Net
         protected static Random Random => NEATUtils.Random;
 
         public abstract float EvaluateGenome(IGenome genome);
+
+        /// <summary>
+        /// Saves the state of the run (population, species, best genome, generation and innovation history) so that
+        /// <see cref="LoadCheckpoint(string)"/> can continue it later. Requires the <see cref="NEAT.Net.InnovationGenerator"/>
+        /// </summary>
+        public void SaveCheckpoint(string filePath)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(filePath);
+
+            using FileStream stream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None);
+            SaveCheckpoint(stream);
+        }
+
+        /// <inheritdoc cref="SaveCheckpoint(string)"/>
+        public void SaveCheckpoint(Stream stream)
+        {
+            if (InnovationGenerator is not InnovationGenerator generator)
+                throw new NotSupportedException($"Checkpoints need the {nameof(NEAT.Net.InnovationGenerator)} to save the innovation history");
+
+            CheckpointSerializer.Save(stream, new CheckpointState(Generation, CompatibilityThreshold, generator, Genomes, Species, FittestGenome));
+        }
+
+        /// <summary>
+        /// Replaces the state of this evaluator with a checkpoint saved by <see cref="SaveCheckpoint(string)"/>.
+        /// <see cref="PopulationSize"/> stays as configured, so a run can continue with a different population size.
+        /// The random number sequence is not part of the checkpoint
+        /// </summary>
+        public void LoadCheckpoint(string filePath)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(filePath);
+
+            using FileStream stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            LoadCheckpoint(stream);
+        }
+
+        /// <inheritdoc cref="LoadCheckpoint(string)"/>
+        public void LoadCheckpoint(Stream stream)
+        {
+            CheckpointState state = CheckpointSerializer.Load(stream);
+
+            Generation = state.Generation;
+            CompatibilityThreshold = state.CompatibilityThreshold;
+            InnovationGenerator = state.InnovationGenerator;
+            Genomes = state.Genomes;
+            Species = state.Species;
+            FittestGenome = state.FittestGenome;
+            nextGeneration.Clear();
+        }
 
         public void Evaluate()
         {

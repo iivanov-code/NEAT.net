@@ -64,6 +64,27 @@ one float output `output` of shape `[batch, outputs]`:
 OnnxExporter.Export(best, @"C:\models\xor.onnx");
 ```
 
+## Saving genomes and runs
+
+A saved network holds only the finished phenotype. To keep evolving, save genomes or the whole run instead (JSON):
+
+```csharp
+// one genome: node genes, connection genes (innovation, weight, enabled) and fitness
+GenomeSerializer.Save(evaluator.FittestGenome, @"C:\models\best.genome.json");
+Genome genome = GenomeSerializer.Load(@"C:\models\best.genome.json");
+
+// the whole run: population, species, best genome, generation and innovation history
+evaluator.SaveCheckpoint(@"C:\runs\xor.checkpoint.json");
+
+var generator = new InnovationGenerator();
+var resumed = new XorEvaluator(Genome.CreateMinimal(2, 1, generator), generator);
+resumed.LoadCheckpoint(@"C:\runs\xor.checkpoint.json");   // replaces the population and the generator state
+resumed.Evaluate();                                          // continues with the next generation
+```
+
+New mutations of a loaded genome need an innovation generator that knows its innovation numbers, such as the
+one restored by `LoadCheckpoint`. The random number sequence is not part of a checkpoint.
+
 `genome.ToNetwork(settings)` turns any genome into an ANN.Net network (`PhenotypeSettings` chooses the
 activations and optimizer). The network can also be trained with backpropagation and its weights written back
 with `genome.ApplyWeights(network)`.
