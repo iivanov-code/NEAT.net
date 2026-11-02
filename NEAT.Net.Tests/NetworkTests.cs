@@ -1,4 +1,6 @@
 ﻿using System;
+using System.IO;
+using ANN.Net;
 using System.Linq;
 using ActivationTypes = ANN.Net.Abstractions.Enums.ActivationTypes;
 using ANN.Net.Abstractions.Interfaces;
@@ -70,6 +72,30 @@ namespace NEAT.Net.Tests
 
             Assert.Empty(network.HiddenNodeIds);
             Assert.Single(network.Propagate(1, 1));
+        }
+
+        [Fact]
+        public void SavedNetwork_LoadsBackWithTheSameOutputsAndConnectionIds()
+        {
+            using var seed = new SeededRandom(9);
+            var generator = new InnovationGenerator();
+            IGenome genome = Genome.CreateMinimal(2, 1, generator);
+            for (int i = 0; i < 10; i++)
+            {
+                genome.Mutate(i % 2 == 0 ? MutationType.Node : MutationType.Connection, generator);
+            }
+
+            IGraphNetwork network = genome.ToNetwork();
+            using var stream = new MemoryStream();
+            NetworkSerializer.Save(network, stream);
+            stream.Position = 0;
+            IGraphNetwork loaded = NetworkSerializer.Load<IGraphNetwork>(stream);
+
+            Assert.Equal(network.Propagate(0.3f, -0.8f)[0], loaded.Propagate(0.3f, -0.8f)[0]);
+            Assert.Equal(network.ConnectionWeights.Keys.OrderBy(x => x), loaded.ConnectionWeights.Keys.OrderBy(x => x));
+
+            // the weights of a loaded network can still be written back into the genome
+            genome.ApplyWeights(loaded);
         }
 
         [Fact]

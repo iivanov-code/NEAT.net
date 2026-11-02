@@ -50,6 +50,10 @@ for (int i = 0; i < 300; i++)
 }
 
 IGraphNetwork best = evaluator.FittestGenome.ToNetwork();
+
+// save the network and load it again later
+best.Save(@"C:\models", "xor");                                         // writes C:\models\xor.ann (JSON)
+IGraphNetwork loaded = NetworkSerializer.Load<IGraphNetwork>(@"C:\models\xor.ann");
 ```
 
 `genome.ToNetwork(settings)` turns any genome into an ANN.Net network (`PhenotypeSettings` chooses the
