@@ -4,13 +4,13 @@ namespace NEAT.Net
 {
     public class ConnectionGene : IConnectionGene
     {
-        public ConnectionGene(uint innovation, INodeGene input, INodeGene output, float weight)
+        public ConnectionGene(uint innovation, INodeGene input, INodeGene output, float weight, bool enabled = true)
         {
             Weight = weight;
             Innovation = innovation;
             Input = input;
             Output = output;
-            Enabled = true;
+            Enabled = enabled;
         }
 
         private INodeGene input;
@@ -55,9 +55,13 @@ namespace NEAT.Net
 
         public uint Innovation { get; private set; }
 
+        /// <summary>
+        /// Copies the gene including its enabled state. The copy still points to the same node genes;
+        /// a genome that clones its connections must point them to its own nodes
+        /// </summary>
         public IConnectionGene Clone()
         {
-            return new ConnectionGene(Innovation, Input, Output, Weight);
+            return new ConnectionGene(Innovation, Input, Output, Weight, Enabled);
         }
 
         public void Disable()

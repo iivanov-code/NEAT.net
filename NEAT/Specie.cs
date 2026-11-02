@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using NEAT.Net.Abstrations;
@@ -10,32 +11,24 @@ namespace NEAT.Net
     {
         public Specie(IGenome genome)
         {
-            Genomes = new List<IGenome>();
-            Genomes.Add(genome);
+            Genomes = new List<IGenome> { genome };
             Mascot = genome;
+            BestFitness = float.MinValue;
         }
 
         public IGenome this[int index] => Genomes[index];
 
         public IList<IGenome> Genomes { get; private init; }
 
-        public float AverageFitness
-        {
-            get
-            {
-                if (Genomes.Any())
-                {
-                    return Genomes.Average(x => x.Fitness);
-                }
-                else
-                {
-                    return 0;
-                }
-            }
-        }
+        public float AverageFitness => Genomes.Count > 0 ? Genomes.Average(x => x.Fitness) : 0f;
 
-        public IGenome FittestGenome { get; private set; }
-        public IGenome Mascot { get; private init; }
+        public IGenome FittestGenome => Genomes.Count > 0 ? Genomes.MaxBy(x => x.Fitness) : null;
+
+        public IGenome Mascot { get; private set; }
+
+        public float BestFitness { get; private set; }
+
+        public int Stagnation { get; private set; }
 
         public int Count => Genomes.Count;
 
@@ -46,25 +39,39 @@ namespace NEAT.Net
 
         public bool TryAddGenome(IGenome genome, float dt = DefaultConstants.DT, float c1 = DefaultConstants.C1, float c2 = DefaultConstants.C2, float c3 = DefaultConstants.C3)
         {
-            if (Mascot.CompatibilityDistance(genome) < dt)
+            if (Mascot.CompatibilityDistance(genome, c1, c2, c3) < dt)
             {
                 Genomes.Add(genome);
-                genome.FitnessAssigned += Genome_FitnessAssigned;
                 return true;
+            }
+
+            return false;
+        }
+
+        public void UpdateStagnation()
+        {
+            IGenome fittest = FittestGenome;
+            if (fittest == null) return;
+
+            if (fittest.Fitness > BestFitness)
+            {
+                BestFitness = fittest.Fitness;
+                Stagnation = 0;
             }
             else
             {
-                return false;
+                Stagnation++;
             }
-
         }
 
-        private void Genome_FitnessAssigned(object sender, FitnessAssignedEventArgs e)
+        public void StartNewGeneration(Random random)
         {
-            if (FittestGenome == null || e.Genome.Fitness > FittestGenome.Fitness)
+            if (Genomes.Count > 0)
             {
-                FittestGenome = e.Genome;
+                Mascot = Genomes[random.Next(Genomes.Count)];
             }
+
+            Genomes.Clear();
         }
 
         IEnumerator IEnumerable.GetEnumerator()
