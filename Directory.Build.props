@@ -1,4 +1,4 @@
-<Project>
+﻿<Project>
     <!-- Static code analyzers, shared with ANN.Net. PrivateAssets=all keeps them out of the produced NuGet packages. -->
     <ItemGroup>
         <!-- Logic/bug detection and security hotspots. -->
@@ -12,6 +12,8 @@
     <!-- Common build settings. Individual projects can override any of these. -->
     <PropertyGroup>
         <TargetFramework>net10.0</TargetFramework>
+        <!-- ANN.Net (https://github.com/iivanov-code/ANN.Net) checked out next to this repository; override to point elsewhere -->
+        <AnnNetRoot Condition="'$(AnnNetRoot)' == ''">$(MSBuildThisFileDirectory)..\ANN.Net\</AnnNetRoot>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <!-- Disable warnings for missing or misplaced XML doc comments. -->
         <NoWarn>$(NoWarn);CS1591;CS1573;CS1587;CS1570</NoWarn>

@@ -29,6 +29,11 @@ namespace NEAT.Net.Abstrations.Interfaces
         bool TryAddGenome(IGenome genome, float dt = DefaultConstants.DT, float c1 = DefaultConstants.C1, float c2 = DefaultConstants.C2, float c3 = DefaultConstants.C3);
 
         /// <summary>
+        /// Adds the genome when it is closer than <see cref="NeatSettings.CompatibilityThreshold"/> to <see cref="Mascot"/>
+        /// </summary>
+        bool TryAddGenome(IGenome genome, NeatSettings settings);
+
+        /// <summary>
         /// Updates <see cref="BestFitness"/> and <see cref="Stagnation"/> once the members have been evaluated
         /// </summary>
         void UpdateStagnation();

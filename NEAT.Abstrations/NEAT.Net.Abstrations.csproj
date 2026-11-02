@@ -7,5 +7,13 @@
 		<SccLocalPath>SAK</SccLocalPath>
 	</PropertyGroup>
 
+	<PropertyGroup>
+		<AnnNetAbstractionsProject Condition="'$(AnnNetAbstractionsProject)' == ''">$(AnnNetRoot)ANN.Net.Abstractions\ANN.Net.Abstractions.csproj</AnnNetAbstractionsProject>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- activation functions of node genes are ANN.Net's ActivationTypes -->
+		<ProjectReference Include="$(AnnNetAbstractionsProject)" />
+	</ItemGroup>
 
 </Project>

@@ -18,47 +18,61 @@ namespace NEAT.Net
         private readonly List<IGenome> nextGeneration = new List<IGenome>();
 
         protected Evaluator(IGenome initialGenome, IInnovationGenerator innovationGenerator, ushort populationSize = DefaultConstants.POPULATION_SIZE)
+            : this(initialGenome, innovationGenerator, new NeatSettings { PopulationSize = populationSize })
+        { }
+
+        /// <summary>
+        /// Starts a run with the given parameters. The evaluator keeps using this instance, so changes to it take
+        /// effect from the next generation
+        /// </summary>
+        protected Evaluator(IGenome initialGenome, IInnovationGenerator innovationGenerator, NeatSettings settings)
         {
             if (initialGenome == null) throw new ArgumentNullException(nameof(initialGenome));
             if (innovationGenerator == null) throw new ArgumentNullException(nameof(innovationGenerator));
-            if (populationSize == 0) throw new ArgumentOutOfRangeException(nameof(populationSize));
+            ArgumentNullException.ThrowIfNull(settings);
+            settings.Validate();
 
-            Genomes = new List<IGenome>(populationSize);
+            Settings = settings;
+            Genomes = new List<IGenome>(settings.PopulationSize);
             Species = new List<ISpecie>();
-
             InnovationGenerator = innovationGenerator;
-            PopulationSize = populationSize;
 
             for (int i = 0; i < PopulationSize; i++)
             {
                 IGenome genome = initialGenome.Clone();
                 foreach (IConnectionGene connection in genome.Connections.Values)
                 {
-                    connection.Weight = Random.NextFloat(-DefaultConstants.INITIAL_WEIGHT_RANGE, DefaultConstants.INITIAL_WEIGHT_RANGE);
+                    connection.Weight = Random.NextFloat(-settings.InitialWeightRange, settings.InitialWeightRange);
                 }
 
                 Genomes.Add(genome);
             }
         }
 
+        public NeatSettings Settings { get; private set; }
         public IGenome FittestGenome { get; protected set; }
         public ICollection<IGenome> Genomes { get; private set; }
         public IInnovationGenerator InnovationGenerator { get; private set; }
-        public ushort PopulationSize { get; private set; }
+        public ushort PopulationSize => Settings.PopulationSize;
         public ICollection<ISpecie> Species { get; private set; }
         public uint Generation { get; private set; }
 
         /// <summary>
         /// Genomes closer than this to the representative of a specie belong to that specie
+        /// (shortcut for <see cref="NeatSettings.CompatibilityThreshold"/>)
         /// </summary>
-        public float CompatibilityThreshold { get; set; } = DefaultConstants.DT;
+        public float CompatibilityThreshold
+        {
+            get => Settings.CompatibilityThreshold;
+            set => Settings.CompatibilityThreshold = value;
+        }
 
         protected static Random Random => NEATUtils.Random;
 
         public abstract float EvaluateGenome(IGenome genome);
 
         /// <summary>
-        /// Saves the state of the run (population, species, best genome, generation and innovation history) so that
+        /// Saves the state of the run (settings, population, species, best genome, generation and innovation history) so that
         /// <see cref="LoadCheckpoint(string)"/> can continue it later. Requires the <see cref="NEAT.Net.InnovationGenerator"/>
         /// </summary>
         public void SaveCheckpoint(string filePath)
@@ -75,13 +89,13 @@ namespace NEAT.Net
             if (InnovationGenerator is not InnovationGenerator generator)
                 throw new NotSupportedException($"Checkpoints need the {nameof(NEAT.Net.InnovationGenerator)} to save the innovation history");
 
-            CheckpointSerializer.Save(stream, new CheckpointState(Generation, CompatibilityThreshold, generator, Genomes, Species, FittestGenome));
+            CheckpointSerializer.Save(stream, new CheckpointState(Generation, Settings, Settings.CompatibilityThreshold, generator, Genomes, Species, FittestGenome));
         }
 
         /// <summary>
-        /// Replaces the state of this evaluator with a checkpoint saved by <see cref="SaveCheckpoint(string)"/>.
-        /// <see cref="PopulationSize"/> stays as configured, so a run can continue with a different population size.
-        /// The random number sequence is not part of the checkpoint
+        /// Replaces the state of this evaluator, including <see cref="Settings"/>, with a checkpoint saved by
+        /// <see cref="SaveCheckpoint(string)"/>. To continue with different parameters (a larger population, for
+        /// example), change <see cref="Settings"/> after loading. The random number sequence is not part of the checkpoint
         /// </summary>
         public void LoadCheckpoint(string filePath)
         {
@@ -97,7 +111,15 @@ namespace NEAT.Net
             CheckpointState state = CheckpointSerializer.Load(stream);
 
             Generation = state.Generation;
-            CompatibilityThreshold = state.CompatibilityThreshold;
+            if (state.Settings != null)
+            {
+                Settings = state.Settings;
+            }
+            else
+            {
+                Settings.CompatibilityThreshold = state.CompatibilityThreshold;
+            }
+
             InnovationGenerator = state.InnovationGenerator;
             Genomes = state.Genomes;
             Species = state.Species;
@@ -107,6 +129,8 @@ namespace NEAT.Net
 
         public void Evaluate()
         {
+            Settings.Validate();
+
             EvaluateGenomes();
             CategorizeIntoSpecies();
             PutGenomesIntoNextGeneration();
@@ -157,7 +181,7 @@ namespace NEAT.Net
         {
             nextGeneration.Clear();
 
-            foreach (var specie in Species.Where(x => x.Count > DefaultConstants.SPECIES_WITH_MORE_THAN))
+            foreach (var specie in Species.Where(x => x.Count > Settings.ElitismMinimumSpecieSize))
             {
                 nextGeneration.Add(specie.FittestGenome);
             }
@@ -176,7 +200,7 @@ namespace NEAT.Net
             if (remaining > 0 && Species.Count > 0)
             {
                 IGenome best = Species.Select(x => x.FittestGenome).MaxBy(x => x.Fitness);
-                List<ISpecie> eligible = Species.Where(x => x.Stagnation < DefaultConstants.STAGNATION_LIMIT || x.Genomes.Contains(best)).ToList();
+                List<ISpecie> eligible = Species.Where(x => x.Stagnation < Settings.StagnationLimit || x.Genomes.Contains(best)).ToList();
 
                 int[] offspring = AllocateOffspring(eligible, remaining);
 
@@ -192,19 +216,19 @@ namespace NEAT.Net
 
         protected virtual void MutateGenome(IGenome genome)
         {
-            if (Random.NextDouble() < DefaultConstants.CHANCE_OF_WEIGHTS_MUTATION)
+            if (Random.NextDouble() < Settings.WeightMutationRate)
             {
-                genome.Mutate(MutationType.AllConnections, InnovationGenerator);
+                genome.Mutate(MutationType.AllConnections, InnovationGenerator, Settings);
             }
 
-            if (Random.NextDouble() < DefaultConstants.PROBABILITY_OF_ADDING_NEW_LINK)
+            if (Random.NextDouble() < Settings.AddConnectionRate)
             {
-                genome.Mutate(MutationType.Connection, InnovationGenerator);
+                genome.Mutate(MutationType.Connection, InnovationGenerator, Settings);
             }
 
-            if (Random.NextDouble() < DefaultConstants.PROBABILITY_OF_ADDING_NEW_NODE)
+            if (Random.NextDouble() < Settings.AddNodeRate)
             {
-                genome.Mutate(MutationType.Node, InnovationGenerator);
+                genome.Mutate(MutationType.Node, InnovationGenerator, Settings);
             }
         }
 
@@ -219,7 +243,7 @@ namespace NEAT.Net
 
         private void AssignToSpecie(IGenome genome)
         {
-            if (!Species.Any(x => x.TryAddGenome(genome, CompatibilityThreshold)))
+            if (!Species.Any(x => x.TryAddGenome(genome, Settings)))
             {
                 Species.Add(new Specie(genome));
             }
@@ -229,7 +253,7 @@ namespace NEAT.Net
         {
             if (count <= 0) return;
 
-            int parentsCount = Math.Max(1, (int)Math.Ceiling(specie.Count * DefaultConstants.SURVIVAL_THRESHOLD));
+            int parentsCount = Math.Max(1, (int)Math.Ceiling(specie.Count * Settings.SurvivalThreshold));
             List<IGenome> parents = specie.Genomes.OrderByDescending(x => x.Fitness).Take(parentsCount).ToList();
 
             for (int i = 0; i < count; i++)
@@ -237,14 +261,14 @@ namespace NEAT.Net
                 IGenome parent1 = parents.RandomElement(Random);
                 IGenome child;
 
-                if (parents.Count == 1 || Random.NextDouble() < DefaultConstants.PERCENT_OF_DIRECT_OFFSPRING)
+                if (parents.Count == 1 || Random.NextDouble() < Settings.MutationOnlyRate)
                 {
                     child = parent1.Clone();
                 }
                 else
                 {
                     IGenome parent2;
-                    if (Species.Count > 1 && Random.NextDouble() < DefaultConstants.INTERSPECIES_MATING_RATE)
+                    if (Species.Count > 1 && Random.NextDouble() < Settings.InterspeciesMatingRate)
                     {
                         ISpecie other = Species.Where(x => x != specie).ToList().RandomElement(Random);
                         parent2 = other.Genomes.ToList().RandomElement(Random);
@@ -257,7 +281,7 @@ namespace NEAT.Net
                         } while (parent2 == parent1);
                     }
 
-                    child = parent1.Crossover(parent2);
+                    child = parent1.Crossover(parent2, Settings);
                 }
 
                 MutateGenome(child);

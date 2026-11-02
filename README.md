@@ -13,11 +13,11 @@ C# implementation of NeuroEvolution of Augmenting Topologies (NEAT) algorithm
 ## Building
 
 NEAT.Net builds its networks with [ANN.Net](https://github.com/iivanov-code/ANN.Net), which must be checked
-out next to this repository (`../ANN.Net`). Point the `AnnNetProject` MSBuild property at
-`ANN.Net/NeuralNetwork/ANN.Net.csproj` if it lives somewhere else:
+out next to this repository (`../ANN.Net`). Point the `AnnNetRoot` MSBuild property at the ANN.Net folder
+if it lives somewhere else:
 
 ```
-dotnet test NEAT.Net.Tests -p:AnnNetProject=/path/to/ANN.Net/NeuralNetwork/ANN.Net.csproj
+dotnet test NEAT.Net.Tests -p:AnnNetRoot=/path/to/ANN.Net/
 ```
 
 ## Usage
@@ -50,6 +50,34 @@ for (int i = 0; i < 300; i++)
 }
 
 IGraphNetwork best = evaluator.FittestGenome.ToNetwork();
+```
+
+### Settings
+
+All parameters of a run live in `NeatSettings`. The defaults follow the NEAT paper (see `DefaultConstants`).
+The evaluator keeps the instance it was given, and changes take effect from the next generation:
+
+```csharp
+var settings = new NeatSettings
+{
+    PopulationSize = 300,
+    CompatibilityThreshold = 2.5f,
+    AddNodeRate = 0.05f,
+    AddConnectionRate = 0.1f,
+    MaxWeight = 20f
+};
+
+var evaluator = new XorEvaluator(Genome.CreateMinimal(2, 1, generator, settings: settings), generator, settings);
+evaluator.Evaluate();
+evaluator.Settings.AddNodeRate = 0.01f;      // used from the next generation on
+```
+
+(`XorEvaluator` then needs a constructor that passes `NeatSettings` on to `base(genome, generator, settings)`.)
+Invalid values are rejected with an `ArgumentException` when the evaluator starts and before every generation.
+
+### Saving and exporting
+
+```csharp
 
 // save the network and load it again later
 best.Save(@"C:\models", "xor");                                         // writes C:\models\xor.ann (JSON)
@@ -73,17 +101,18 @@ A saved network holds only the finished phenotype. To keep evolving, save genome
 GenomeSerializer.Save(evaluator.FittestGenome, @"C:\models\best.genome.json");
 Genome genome = GenomeSerializer.Load(@"C:\models\best.genome.json");
 
-// the whole run: population, species, best genome, generation and innovation history
+// the whole run: settings, population, species, best genome, generation and innovation history
 evaluator.SaveCheckpoint(@"C:\runs\xor.checkpoint.json");
 
 var generator = new InnovationGenerator();
 var resumed = new XorEvaluator(Genome.CreateMinimal(2, 1, generator), generator);
-resumed.LoadCheckpoint(@"C:\runs\xor.checkpoint.json");   // replaces the population and the generator state
+resumed.LoadCheckpoint(@"C:\runs\xor.checkpoint.json");   // replaces the settings, population and generator state
 resumed.Evaluate();                                          // continues with the next generation
 ```
 
 New mutations of a loaded genome need an innovation generator that knows its innovation numbers, such as the
-one restored by `LoadCheckpoint`. The random number sequence is not part of a checkpoint.
+one restored by `LoadCheckpoint`. To continue with different parameters, change `resumed.Settings` after loading.
+The random number sequence is not part of a checkpoint.
 
 `genome.ToNetwork(settings)` turns any genome into an ANN.Net network (`PhenotypeSettings` chooses the
 activations and optimizer). The network can also be trained with backpropagation and its weights written back

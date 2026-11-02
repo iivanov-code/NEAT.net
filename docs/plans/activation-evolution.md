@@ -50,7 +50,15 @@ Steps:
 These are the activations that make mixed-activation NEAT useful. Gaussian and Sinusoid in particular
 let small networks represent symmetric and repeating patterns, as in CPPNs/HyperNEAT.
 
-## Phase 1 – Configurable settings (NEAT.net)
+## Phase 1 – Configurable settings (NEAT.net) – done
+
+- `NeatSettings` lives in NEAT.Abstractions, which now references ANN.Net.Abstractions; both sibling paths
+  come from the `AnnNetRoot` MSBuild property.
+- `Evaluator`, `NetworkEvaluator`, `Genome` (mutation, crossover, distance, `CreateMinimal`) and `Specie`
+  take the settings; the old signatures use the defaults.
+- Checkpoints store the settings, and older checkpoints without them still load.
+- Default settings reproduce the previous commit exactly: best fitness and species count matched over
+  5 seeds × 40 XOR generations.
 
 The activation set and its probabilities must be configurable per run, but all parameters are
 `const` in `DefaultConstants`. Introduce a `NeatSettings` class:

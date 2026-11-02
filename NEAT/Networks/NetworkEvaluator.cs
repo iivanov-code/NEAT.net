@@ -18,6 +18,15 @@ namespace NEAT.Net.Networks
             PhenotypeSettings = phenotypeSettings ?? new PhenotypeSettings();
         }
 
+        protected NetworkEvaluator(IGenome initialGenome,
+                                   IInnovationGenerator innovationGenerator,
+                                   NeatSettings settings,
+                                   PhenotypeSettings phenotypeSettings = null)
+            : base(initialGenome, innovationGenerator, settings)
+        {
+            PhenotypeSettings = phenotypeSettings ?? new PhenotypeSettings();
+        }
+
         public PhenotypeSettings PhenotypeSettings { get; }
 
         public override float EvaluateGenome(IGenome genome)

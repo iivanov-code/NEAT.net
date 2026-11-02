@@ -20,8 +20,9 @@ namespace NEAT.Net
         /// <summary>
         /// Minimal starting genome: every input (and the bias) connected directly to every output, without hidden nodes
         /// </summary>
-        public static Genome CreateMinimal(int inputsCount, int outputsCount, IInnovationGenerator generator, bool withBias = true)
+        public static Genome CreateMinimal(int inputsCount, int outputsCount, IInnovationGenerator generator, bool withBias = true, NeatSettings settings = null)
         {
+            settings ??= DefaultSettings;
             if (inputsCount <= 0) throw new ArgumentOutOfRangeException(nameof(inputsCount));
             if (outputsCount <= 0) throw new ArgumentOutOfRangeException(nameof(outputsCount));
             if (generator == null) throw new ArgumentNullException(nameof(generator));
@@ -50,12 +51,17 @@ namespace NEAT.Net
                 foreach (INodeGene to in outputs)
                 {
                     uint innovation = generator.GetConnectionInnovationNumber(from.Innovation, to.Innovation);
-                    genome.Connections.Add(innovation, new ConnectionGene(innovation, from, to, RandomWeight()));
+                    genome.Connections.Add(innovation, new ConnectionGene(innovation, from, to, RandomWeight(settings)));
                 }
             }
 
             return genome;
         }
+
+        /// <summary>
+        /// Used by the overloads without settings
+        /// </summary>
+        private static readonly NeatSettings DefaultSettings = new NeatSettings();
 
         private event EventHandler<FitnessAssignedEventArgs> fitnessAssigned;
         public event EventHandler<FitnessAssignedEventArgs> FitnessAssigned
@@ -122,6 +128,17 @@ namespace NEAT.Net
         /// </summary>
         public float CompatibilityDistance(IGenome other, float c1 = DefaultConstants.C1, float c2 = DefaultConstants.C2, float c3 = DefaultConstants.C3)
         {
+            return CompatibilityDistance(other, c1, c2, c3, DefaultConstants.SMALL_GENOME_SIZE);
+        }
+
+        public float CompatibilityDistance(IGenome other, NeatSettings settings)
+        {
+            ArgumentNullException.ThrowIfNull(settings);
+            return CompatibilityDistance(other, settings.ExcessCoefficient, settings.DisjointCoefficient, settings.WeightDifferenceCoefficient, settings.SmallGenomeSize);
+        }
+
+        private float CompatibilityDistance(IGenome other, float c1, float c2, float c3, int smallGenomeSize)
+        {
             if (other == null) throw new ArgumentNullException(nameof(other));
 
             int matchingGenes = 0, disjointGenes = 0, excessGenes = 0;
@@ -145,7 +162,7 @@ namespace NEAT.Net
             }
 
             int numberGenes = Math.Max(Connections.Count, other.Connections.Count);
-            if (numberGenes < DefaultConstants.SMALL_GENOME_SIZE) numberGenes = 1;
+            if (numberGenes < smallGenomeSize) numberGenes = 1;
 
             float averageWeightDifference = matchingGenes > 0 ? weightDifference / matchingGenes : 0f;
 
@@ -158,7 +175,14 @@ namespace NEAT.Net
         /// </summary>
         public IGenome Crossover(IGenome other)
         {
+            return Crossover(other, DefaultSettings);
+        }
+
+        /// <inheritdoc cref="Crossover(IGenome)"/>
+        public IGenome Crossover(IGenome other, NeatSettings settings)
+        {
             if (other == null) throw new ArgumentNullException(nameof(other));
+            ArgumentNullException.ThrowIfNull(settings);
 
             Random random = NEATUtils.Random;
             IGenome fittest, weakest;
@@ -197,7 +221,7 @@ namespace NEAT.Net
 
                     if (!gene.First.Enabled || !gene.Second.Enabled)
                     {
-                        if (random.NextDouble() < DefaultConstants.DISABLED_WEIGHT_CHANCE)
+                        if (random.NextDouble() < settings.DisableInheritedChance)
                         {
                             connection.Disable();
                         }
@@ -220,16 +244,23 @@ namespace NEAT.Net
 
         public void Mutate(MutationType mutationType, IInnovationGenerator generator)
         {
+            Mutate(mutationType, generator, DefaultSettings);
+        }
+
+        public void Mutate(MutationType mutationType, IInnovationGenerator generator, NeatSettings settings)
+        {
+            ArgumentNullException.ThrowIfNull(settings);
+
             switch (mutationType)
             {
                 case MutationType.Connection:
-                    AddConnectionMutation(generator);
+                    AddConnectionMutation(generator, settings);
                     break;
                 case MutationType.Node:
                     AddNodeMutation(generator);
                     break;
                 case MutationType.AllConnections:
-                    MutateAllConnections();
+                    MutateAllConnections(settings);
                     break;
                 default:
                     throw new ArgumentException("Unknown mutation type", nameof(mutationType));
@@ -274,9 +305,9 @@ namespace NEAT.Net
             }
         }
 
-        private static float RandomWeight()
+        private static float RandomWeight(NeatSettings settings)
         {
-            return NEATUtils.Random.NextFloat(-DefaultConstants.INITIAL_WEIGHT_RANGE, DefaultConstants.INITIAL_WEIGHT_RANGE);
+            return NEATUtils.Random.NextFloat(-settings.InitialWeightRange, settings.InitialWeightRange);
         }
 
         private INodeGene AddNode(uint innovation, NodeType type)
@@ -305,7 +336,7 @@ namespace NEAT.Net
         /// Adds a connection between two unconnected nodes. Only feed-forward connections are created: the new
         /// connection may not close a cycle, counting disabled connections too since crossover can enable them again
         /// </summary>
-        private void AddConnectionMutation(IInnovationGenerator generator)
+        private void AddConnectionMutation(IInnovationGenerator generator, NeatSettings settings)
         {
             Random random = NEATUtils.Random;
             List<INodeGene> sources = Nodes.Values.Where(CanBeSource).ToList();
@@ -313,7 +344,7 @@ namespace NEAT.Net
 
             if (sources.Count == 0 || targets.Count == 0) return;
 
-            for (int attempt = 0; attempt < DefaultConstants.ADD_LINK_ATTEMPTS; attempt++)
+            for (int attempt = 0; attempt < settings.AddConnectionAttempts; attempt++)
             {
                 INodeGene fromNode = sources.RandomElement(random);
                 INodeGene toNode = targets.RandomElement(random);
@@ -324,7 +355,7 @@ namespace NEAT.Net
                 if (hasConnection || IsReachable(toNode.Innovation, fromNode.Innovation)) continue;
 
                 uint innovation = generator.GetConnectionInnovationNumber(fromNode.Innovation, toNode.Innovation);
-                Connections.Add(innovation, new ConnectionGene(innovation, fromNode, toNode, RandomWeight()));
+                Connections.Add(innovation, new ConnectionGene(innovation, fromNode, toNode, RandomWeight(settings)));
                 return;
             }
         }
@@ -387,19 +418,19 @@ namespace NEAT.Net
             fitnessAssigned?.Invoke(this, new FitnessAssignedEventArgs(this));
         }
 
-        private void MutateAllConnections()
+        private void MutateAllConnections(NeatSettings settings)
         {
             Random random = NEATUtils.Random;
             foreach (var connection in Connections.Values)
             {
-                if (random.NextDouble() < DefaultConstants.PERTURBED_CHANCE)
+                if (random.NextDouble() < settings.WeightPerturbationChance)
                 {
-                    float weight = connection.Weight + random.NextFloat(-DefaultConstants.WEIGHT_PERTURBATION, DefaultConstants.WEIGHT_PERTURBATION);
-                    connection.Weight = Math.Clamp(weight, -DefaultConstants.MAX_WEIGHT, DefaultConstants.MAX_WEIGHT);
+                    float weight = connection.Weight + random.NextFloat(-settings.WeightPerturbation, settings.WeightPerturbation);
+                    connection.Weight = Math.Clamp(weight, -settings.MaxWeight, settings.MaxWeight);
                 }
                 else
                 {
-                    connection.Weight = RandomWeight();
+                    connection.Weight = RandomWeight(settings);
                 }
             }
         }

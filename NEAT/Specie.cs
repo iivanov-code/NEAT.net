@@ -59,6 +59,19 @@ namespace NEAT.Net
             return false;
         }
 
+        public bool TryAddGenome(IGenome genome, NeatSettings settings)
+        {
+            ArgumentNullException.ThrowIfNull(settings);
+
+            if (Mascot.CompatibilityDistance(genome, settings) < settings.CompatibilityThreshold)
+            {
+                Genomes.Add(genome);
+                return true;
+            }
+
+            return false;
+        }
+
         public void UpdateStagnation()
         {
             IGenome fittest = FittestGenome;

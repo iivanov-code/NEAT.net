@@ -9,6 +9,11 @@ namespace NEAT.Net.Abstrations.Interfaces
         /// </summary>
         IGenome FittestGenome { get; }
 
+        /// <summary>
+        /// Parameters of the run; changes take effect from the next generation
+        /// </summary>
+        NeatSettings Settings { get; }
+
         ushort PopulationSize { get; }
 
         uint Generation { get; }

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using NEAT.Net.Abstrations;
 
 namespace NEAT.Net.Serialization
 {
@@ -14,7 +15,12 @@ namespace NEAT.Net.Serialization
 
         public uint Generation { get; set; }
 
+        /// <summary>
+        /// Kept next to <see cref="Settings"/> for checkpoints that were saved before settings were part of them
+        /// </summary>
         public float CompatibilityThreshold { get; set; }
+
+        public NeatSettings Settings { get; set; }
 
         public InnovationDocument Innovations { get; set; }
 

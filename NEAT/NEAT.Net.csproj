@@ -8,8 +8,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- ANN.Net is the sibling repository https://github.com/iivanov-code/ANN.Net checked out next to this one -->
-    <AnnNetProject Condition="'$(AnnNetProject)' == ''">$(MSBuildThisFileDirectory)..\..\ANN.Net\NeuralNetwork\ANN.Net.csproj</AnnNetProject>
+    <AnnNetProject Condition="'$(AnnNetProject)' == ''">$(AnnNetRoot)NeuralNetwork\ANN.Net.csproj</AnnNetProject>
   </PropertyGroup>
 
   <ItemGroup>

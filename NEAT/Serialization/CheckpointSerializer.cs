@@ -39,7 +39,8 @@ namespace NEAT.Net.Serialization
                 Format = FormatName,
                 Version = FormatVersion,
                 Generation = state.Generation,
-                CompatibilityThreshold = state.CompatibilityThreshold,
+                CompatibilityThreshold = state.Settings.CompatibilityThreshold,
+                Settings = state.Settings,
                 Innovations = state.InnovationGenerator.ToDocument(),
                 Population = state.Genomes.Select(Index).ToList(),
                 Species = state.Species.Select(x => new SpecieDocument
@@ -85,7 +86,17 @@ namespace NEAT.Net.Serialization
                                                  x.Stagnation))
                 .ToList();
 
+            try
+            {
+                document.Settings?.Validate();
+            }
+            catch (ArgumentException e)
+            {
+                throw new InvalidDataException("The checkpoint holds invalid settings", e);
+            }
+
             return new CheckpointState(document.Generation,
+                                       document.Settings,
                                        document.CompatibilityThreshold,
                                        InnovationGenerator.FromDocument(document.Innovations),
                                        population,
