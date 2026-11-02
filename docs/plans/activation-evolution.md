@@ -15,7 +15,15 @@ Today all hidden nodes share one activation chosen in `PhenotypeSettings.HiddenA
 The ANN.Net side is mostly ready: `GraphNode.ActivationType` already overrides the activation per
 node, and the JSON serializer and ONNX exporter already handle per-node activations.
 
-## Phase 0 – Prerequisites in ANN.Net (separate branch in ANN.Net)
+## Phase 0 – Prerequisites in ANN.Net (separate branch in ANN.Net) – done
+
+Done on ANN.Net `feature/activation-evolution`. Besides Gaussian and Swish it also fixed:
+- the SQNL derivative, which was non-zero where the function is flat (|x| > 2)
+- GELU, which had no parameterless constructor, so its shared instance threw
+- ISRU, which had no shared instance
+
+14 activations can now be built, saved and exported to ONNX.
+BReLU stays excluded (decision: exclude).
 
 Only seven activations can be built today (`NetworkUtils.GetActivation`, `NeuralNetwork/Utils/NetworkUtils.cs:139`):
 Sigmoid, TanH, ArcTan, ReLU, LeakyReLU, BinaryStep and Identity. The other activation classes exist
@@ -195,7 +203,15 @@ Defaults reproduce today's behaviour until the benchmarks justify changing them.
   This is source-compatible, but not binary-compatible.
 - The genome and checkpoint format moves to version 2, and version 1 still loads.
 
-## Open questions
+## Decisions
+
+Recommendations accepted:
+1. Output activations stay fixed unless `OutputActivations` lists more than one function.
+2. NEAT.Abstractions references ANN.Net.Abstractions and uses its `ActivationTypes`.
+3. Per-node response and bias are not part of this plan.
+4. BReLU is excluded from evolution.
+
+## Open questions (resolved, see Decisions)
 
 1. Should output activations evolve too, or stay fixed per problem? Proposed: fixed unless
    `OutputActivations` lists more than one function.
