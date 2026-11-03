@@ -124,6 +124,21 @@ namespace NEAT.Net.Abstrations
         /// </summary>
         public int AddConnectionAttempts { get; set; } = DefaultConstants.ADD_LINK_ATTEMPTS;
 
+        /// <summary>
+        /// Chance that an offspring has one connection enabled again or disabled (0 = off)
+        /// </summary>
+        public float ToggleEnableRate { get; set; }
+
+        /// <summary>
+        /// Chance that an offspring loses a connection gene (0 = off)
+        /// </summary>
+        public float RemoveConnectionRate { get; set; }
+
+        /// <summary>
+        /// Chance that an offspring loses a hidden node and its connections (0 = off)
+        /// </summary>
+        public float RemoveNodeRate { get; set; }
+
         // ---- activations ----
 
         /// <summary>
@@ -183,6 +198,9 @@ namespace NEAT.Net.Abstrations
             Probability(AddNodeRate, nameof(AddNodeRate));
             Probability(AddConnectionRate, nameof(AddConnectionRate));
             Probability(ActivationMutationRate, nameof(ActivationMutationRate));
+            Probability(ToggleEnableRate, nameof(ToggleEnableRate));
+            Probability(RemoveConnectionRate, nameof(RemoveConnectionRate));
+            Probability(RemoveNodeRate, nameof(RemoveNodeRate));
 
             Activations(HiddenActivations, nameof(HiddenActivations));
             Activations(OutputActivations, nameof(OutputActivations));

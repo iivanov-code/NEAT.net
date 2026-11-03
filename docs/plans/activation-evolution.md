@@ -135,7 +135,17 @@ public interface ICrossover
   operators, for compatibility.
 - The existing alignment of genes (`AlignGenes`) moves to a shared internal helper the crossovers use.
 
-## Phase 4 – New mutations
+## Phase 4 – New mutations – done
+
+- `ActivationMutation`, `ToggleEnableMutation`, `RemoveConnectionMutation` and `RemoveNodeMutation` are in the
+  evaluator's default list, with rates in `NeatSettings`.
+- `ToggleEnableRate`, `RemoveConnectionRate` and `RemoveNodeRate` default to 0 instead of the 0.01 proposed
+  below, so default runs stay identical until the benchmarks justify a change.
+- The activation mutation's probability is 0 while no list offers a choice.
+- Not done: splitting the weight mutation into perturb and replace operators. The paper chooses perturb or
+  replace per weight, which `WeightPerturbationChance` already controls; a split would change default runs
+  without adding anything.
+- `MutationType` gained `Activation`, `ToggleEnable`, `RemoveConnection` and `RemoveNode` for `Genome.Mutate`.
 
 | Mutation | What it does | Default rate |
 |---|---|---|

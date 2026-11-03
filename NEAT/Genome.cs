@@ -69,6 +69,10 @@ namespace NEAT.Net
         private static readonly IMutation Weights = new WeightMutation();
         private static readonly IMutation AddConnection = new AddConnectionMutation();
         private static readonly IMutation SplitConnection = new AddNodeMutation();
+        private static readonly IMutation ChangeActivation = new ActivationMutation();
+        private static readonly IMutation ToggleEnable = new ToggleEnableMutation();
+        private static readonly IMutation RemoveConnection = new RemoveConnectionMutation();
+        private static readonly IMutation RemoveNode = new RemoveNodeMutation();
         private static readonly ICrossover DefaultCrossover = new MultipointCrossover();
 
         private event EventHandler<FitnessAssignedEventArgs> fitnessAssigned;
@@ -211,6 +215,10 @@ namespace NEAT.Net
                 MutationType.Connection => AddConnection,
                 MutationType.Node => SplitConnection,
                 MutationType.AllConnections => Weights,
+                MutationType.Activation => ChangeActivation,
+                MutationType.ToggleEnable => ToggleEnable,
+                MutationType.RemoveConnection => RemoveConnection,
+                MutationType.RemoveNode => RemoveNode,
                 _ => throw new ArgumentException("Unknown mutation type", nameof(mutationType))
             };
 

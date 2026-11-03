@@ -54,13 +54,18 @@ namespace NEAT.Net
 
         /// <summary>
         /// Mutations applied to every offspring, in order, each with its own probability. Starts with the mutations of
-        /// the NEAT paper: weights, new connection, new node
+        /// the NEAT paper (weights, new connection, new node) followed by activation, toggle and removal mutations,
+        /// whose default probability is 0 until their rates are set (activations: until there is a choice)
         /// </summary>
         public IList<IMutation> Mutations { get; } = new List<IMutation>
         {
             new WeightMutation(),
             new AddConnectionMutation(),
-            new AddNodeMutation()
+            new AddNodeMutation(),
+            new ActivationMutation(),
+            new ToggleEnableMutation(),
+            new RemoveConnectionMutation(),
+            new RemoveNodeMutation()
         };
 
         /// <summary>

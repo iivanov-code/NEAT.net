@@ -77,14 +77,19 @@ namespace NEAT.Net.Tests
         }
 
         [Fact]
-        public void Evaluator_StartsWithTheMutationsAndCrossoverOfThePaper()
+        public void Evaluator_StartsWithThePapersOperatorsAndInactiveExtras()
         {
             SizeEvaluator evaluator = Create(40);
 
             Assert.Collection(evaluator.Mutations,
                               x => Assert.IsType<WeightMutation>(x),
                               x => Assert.IsType<AddConnectionMutation>(x),
-                              x => Assert.IsType<AddNodeMutation>(x));
+                              x => Assert.IsType<AddNodeMutation>(x),
+                              x => Assert.IsType<ActivationMutation>(x),
+                              x => Assert.IsType<ToggleEnableMutation>(x),
+                              x => Assert.IsType<RemoveConnectionMutation>(x),
+                              x => Assert.IsType<RemoveNodeMutation>(x));
+            Assert.All(evaluator.Mutations.Skip(3), x => Assert.Equal(0f, x.GetProbability(new EvolutionContext(null, evaluator.Settings, NEATUtils.Random))));
             Assert.IsType<MultipointCrossover>(evaluator.Crossover);
             Assert.Throws<ArgumentNullException>(() => evaluator.Crossover = null);
         }
