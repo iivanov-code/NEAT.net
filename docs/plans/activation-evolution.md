@@ -158,7 +158,14 @@ public interface ICrossover
 Every structural mutation keeps the feed-forward guarantee: the existing reachability check
 (`IsReachable`) is reused.
 
-## Phase 5 – Crossovers
+## Phase 5 – Crossovers – done
+
+- `MultipointCrossover` now gives a node both parents have the activation of a random parent. A random number
+  is drawn only when the activations differ, so default runs stay identical (matched phase 4).
+- Added `AveragingCrossover`, `SinglePointCrossover` and `ActivationPreservingCrossover` (subclasses of
+  `MultipointCrossover`), and `WeightedCrossover`, which picks one of several crossovers by weight.
+- `SinglePointCrossover` is simplified: the cut is one of the matching innovation numbers, and disjoint and
+  excess genes still come from the fitter parent, so the child keeps the fitter parent's acyclic topology.
 
 The standard crossover gains the activation rule: a matching node gene inherits its activation
 randomly from either parent, just as matching connection genes inherit weights.
