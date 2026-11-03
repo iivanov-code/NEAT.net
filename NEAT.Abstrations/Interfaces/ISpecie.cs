@@ -26,7 +26,7 @@ namespace NEAT.Net.Abstrations.Interfaces
         /// </summary>
         int Stagnation { get; }
 
-        bool TryAddGenome(IGenome genome, float dt = DefaultConstants.DT, float c1 = DefaultConstants.C1, float c2 = DefaultConstants.C2, float c3 = DefaultConstants.C3);
+        bool TryAddGenome(IGenome genome, float dt = DefaultConstants.DT, float c1 = DefaultConstants.C1, float c2 = DefaultConstants.C2, float c3 = DefaultConstants.C3, float c4 = 0);
 
         /// <summary>
         /// Adds the genome when it is closer than <see cref="NeatSettings.CompatibilityThreshold"/> to <see cref="Mascot"/>

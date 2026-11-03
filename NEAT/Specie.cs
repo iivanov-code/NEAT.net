@@ -48,9 +48,9 @@ namespace NEAT.Net
             return Genomes.GetEnumerator();
         }
 
-        public bool TryAddGenome(IGenome genome, float dt = DefaultConstants.DT, float c1 = DefaultConstants.C1, float c2 = DefaultConstants.C2, float c3 = DefaultConstants.C3)
+        public bool TryAddGenome(IGenome genome, float dt = DefaultConstants.DT, float c1 = DefaultConstants.C1, float c2 = DefaultConstants.C2, float c3 = DefaultConstants.C3, float c4 = 0)
         {
-            if (Mascot.CompatibilityDistance(genome, c1, c2, c3) < dt)
+            if (Mascot.CompatibilityDistance(genome, c1, c2, c3, c4) < dt)
             {
                 Genomes.Add(genome);
                 return true;

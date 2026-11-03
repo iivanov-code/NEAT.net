@@ -134,22 +134,24 @@ namespace NEAT.Net
         }
 
         /// <summary>
-        /// δ = c1*E/N + c2*D/N + c3*W, where E and D are the excess and disjoint connection genes, W the average
-        /// weight difference of the matching genes and N the number of connection genes in the larger genome
-        /// (1 for small genomes)
+        /// δ = c1*E/N + c2*D/N + c3*W + c4*A/Nn, where E and D are the excess and disjoint connection genes, W the
+        /// average weight difference of the matching genes, N the number of connection genes in the larger genome,
+        /// A the number of nodes both genomes have with different activations and Nn the number of node genes in the
+        /// larger genome (N and Nn are 1 for small genomes)
         /// </summary>
-        public float CompatibilityDistance(IGenome other, float c1 = DefaultConstants.C1, float c2 = DefaultConstants.C2, float c3 = DefaultConstants.C3)
+        public float CompatibilityDistance(IGenome other, float c1 = DefaultConstants.C1, float c2 = DefaultConstants.C2, float c3 = DefaultConstants.C3, float c4 = 0)
         {
-            return CompatibilityDistance(other, c1, c2, c3, DefaultConstants.SMALL_GENOME_SIZE);
+            return CompatibilityDistance(other, c1, c2, c3, c4, DefaultConstants.SMALL_GENOME_SIZE);
         }
 
         public float CompatibilityDistance(IGenome other, NeatSettings settings)
         {
             ArgumentNullException.ThrowIfNull(settings);
-            return CompatibilityDistance(other, settings.ExcessCoefficient, settings.DisjointCoefficient, settings.WeightDifferenceCoefficient, settings.SmallGenomeSize);
+            return CompatibilityDistance(other, settings.ExcessCoefficient, settings.DisjointCoefficient, settings.WeightDifferenceCoefficient,
+                                         settings.ActivationDifferenceCoefficient, settings.SmallGenomeSize);
         }
 
-        private float CompatibilityDistance(IGenome other, float c1, float c2, float c3, int smallGenomeSize)
+        private float CompatibilityDistance(IGenome other, float c1, float c2, float c3, float c4, int smallGenomeSize)
         {
             if (other == null) throw new ArgumentNullException(nameof(other));
 
@@ -178,7 +180,18 @@ namespace NEAT.Net
 
             float averageWeightDifference = matchingGenes > 0 ? weightDifference / matchingGenes : 0f;
 
-            return (c1 * excessGenes / numberGenes) + (c2 * disjointGenes / numberGenes) + (c3 * averageWeightDifference);
+            float distance = (c1 * excessGenes / numberGenes) + (c2 * disjointGenes / numberGenes) + (c3 * averageWeightDifference);
+
+            if (c4 > 0)
+            {
+                int differentActivations = Nodes.Values.Count(x => other.Nodes.TryGetValue(x.Innovation, out INodeGene node) && node.Activation != x.Activation);
+                int numberNodes = Math.Max(Nodes.Count, other.Nodes.Count);
+                if (numberNodes < smallGenomeSize) numberNodes = 1;
+
+                distance += c4 * differentActivations / numberNodes;
+            }
+
+            return distance;
         }
 
         /// <summary>

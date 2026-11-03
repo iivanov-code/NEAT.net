@@ -185,7 +185,12 @@ New crossover operators (original NEAT C++ has the first three):
 
 `Evaluator` can pick among several crossovers with weights, for example 60% multipoint and 40% averaging.
 
-## Phase 6 – Speciation
+## Phase 6 – Speciation – done
+
+- The activation term is computed only when c4 > 0 (`NeatSettings.ActivationDifferenceCoefficient`, default 0),
+  so default runs are unchanged (matched phase 5).
+- A node with no activation counts as different from one that has an activation.
+- The float overloads `IGenome.CompatibilityDistance` and `ISpecie.TryAddGenome` gained `c4 = 0`.
 
 Add an activation term to the compatibility distance (`NEAT/Genome.cs:123`):
 
