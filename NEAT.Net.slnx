@@ -1,4 +1,5 @@
 <Solution>
+  <Folder Name="/NEAT/" />
   <Folder Name="/Solution Items/">
     <File Path=".editorconfig" />
     <File Path=".gitignore" />
@@ -9,6 +10,7 @@
     <File Path="README.md" />
   </Folder>
   <Project Path="NEAT.Abstrations/NEAT.Net.Abstrations.csproj" />
+  <Project Path="NEAT.Net.Benchmarks/NEAT.Net.Benchmarks.csproj" />
   <Project Path="NEAT.Net.Tests/NEAT.Net.Tests.csproj" />
   <Project Path="NEAT/NEAT.Net.csproj" />
 </Solution>

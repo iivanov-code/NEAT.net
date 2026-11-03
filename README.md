@@ -73,20 +73,60 @@ evaluator.Settings.AddNodeRate = 0.01f;      // used from the next generation on
 ```
 
 (`XorEvaluator` then needs a constructor that passes `NeatSettings` on to `base(genome, generator, settings)`.)
+Invalid values are rejected with an `ArgumentException` when the evaluator starts and before every generation.
+
+### Activations
 
 Every node gene carries its own activation. New hidden nodes get a random one of `HiddenActivations`, and outputs
-one of `OutputActivations` (both `Sigmoid` by default):
+one of `OutputActivations` (both only `Sigmoid` by default, as in the paper). With more than one activation in a
+list, the activation mutation (rate `ActivationMutationRate`, 0.1) changes them during evolution, and crossover
+passes them on from either parent:
 
 ```csharp
 var settings = new NeatSettings
 {
-    HiddenActivations = new List<ActivationTypes> { ActivationTypes.Sigmoid, ActivationTypes.Gaussian, ActivationTypes.Sinusoid },
-    OutputActivations = new List<ActivationTypes> { ActivationTypes.Sigmoid }
+    HiddenActivations = new List<ActivationTypes>
+    {
+        ActivationTypes.Sigmoid, ActivationTypes.HyperbolicTangens, ActivationTypes.Gaussian, ActivationTypes.Sinusoid, ActivationTypes.RELU
+    }
 };
 ```
 
 Assign new lists as above: the lists already hold `Sigmoid`, so `HiddenActivations = { ... }` would add to it.
-Invalid values are rejected with an `ArgumentException` when the evaluator starts and before every generation.
+In the [benchmarks](docs/benchmarks/activation-evolution.md) this list solved XOR in a median of 9 generations
+instead of 130, and every circle and sine run instead of half of them. `ActivationDifferenceCoefficient` (c4) adds
+differing activations to the compatibility distance; it did not help in the benchmarks and is 0 by default.
+
+### Mutations and crossovers
+
+The evaluator applies every mutation in `evaluator.Mutations` to every offspring, each with its probability, and
+combines parents with `evaluator.Crossover`:
+
+| Mutation | Rate setting | Default |
+|---|---|---|
+| `WeightMutation` | `WeightMutationRate` | 0.8 |
+| `AddConnectionMutation` | `AddConnectionRate` | 0.05 |
+| `AddNodeMutation` | `AddNodeRate` | 0.03 |
+| `ActivationMutation` | `ActivationMutationRate` | 0.1, when a list offers a choice |
+| `ToggleEnableMutation` | `ToggleEnableRate` | 0 (off) |
+| `RemoveConnectionMutation` | `RemoveConnectionRate` | 0 (off) |
+| `RemoveNodeMutation` | `RemoveNodeRate` | 0 (off) |
+
+| Crossover | Matching genes |
+|---|---|
+| `MultipointCrossover` (default) | weight and activation from a random parent |
+| `AveragingCrossover` | average weight of both parents |
+| `SinglePointCrossover` | from the fitter parent before a random cut point, from the weaker one after it |
+| `ActivationPreservingCrossover` | as multipoint, but nodes keep the fitter parent's activation |
+| `WeightedCrossover` | one of several crossovers per child, chosen by weight |
+
+```csharp
+evaluator.Crossover = new WeightedCrossover((new MultipointCrossover(), 0.6), (new AveragingCrossover(), 0.4));
+evaluator.Mutations.Add(new MyMutation());   // any IMutation
+```
+
+All operators keep networks feed-forward. Operators are code and not part of a checkpoint, so configure them
+again on the evaluator that loads one.
 
 ### Saving and exporting
 

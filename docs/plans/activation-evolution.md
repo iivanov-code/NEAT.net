@@ -206,7 +206,15 @@ of the larger genome (1 for small genomes).
 - `ISpecie.TryAddGenome` and `IGenome.CompatibilityDistance` get the new coefficient as an optional
   parameter (default 0).
 
-## Phase 7 – Tests and benchmarks
+## Phase 7 – Tests and benchmarks – done
+
+- 79 tests cover every operator, crossover rules and rates, the distance term, version 1 files, ONNX and
+  save/load of mixed activations, and identical checkpoint resumption with every operator on.
+- `NEAT.Net.Benchmarks` runs XOR, circle and sine. Results are in `docs/benchmarks/activation-evolution.md`:
+  - Mixed activations solve all 60 runs: XOR in a median 9 generations instead of 130, sine in 16, and circle
+    in all 20 runs instead of 9.
+  - The speciation term (c4 = 1) does not help.
+- The defaults stay sigmoid-only, as in the paper; switching to mixed activations is one setting.
 
 **Unit tests**
 - Every operator.

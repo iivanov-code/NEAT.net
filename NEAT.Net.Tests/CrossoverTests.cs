@@ -181,6 +181,54 @@ namespace NEAT.Net.Tests
             public override float EvaluateGenome(IGenome genome) => genome.Nodes.Count + (genome.Connections.Values.Sum(x => Math.Abs(x.Weight)) / 100);
         }
 
+        [Fact]
+        public void Checkpoint_WithEveryOperatorOn_ContinuesIdentically()
+        {
+            static NeatSettings Settings()
+            {
+                NeatSettings settings = Mixed();
+                settings.PopulationSize = 40;
+                settings.AddNodeRate = 0.3f;
+                settings.ToggleEnableRate = 0.1f;
+                settings.RemoveConnectionRate = 0.05f;
+                settings.RemoveNodeRate = 0.05f;
+                settings.ActivationDifferenceCoefficient = 1;
+                return settings;
+            }
+
+            static ICrossover Crossover() => new WeightedCrossover((new MultipointCrossover(), 2), (new AveragingCrossover(), 1), (new SinglePointCrossover(), 1));
+
+            SizeEvaluator original;
+            using (new SeededRandom(77))
+            {
+                var generator = new InnovationGenerator();
+                original = new SizeEvaluator(Genome.CreateMinimal(2, 1, generator, settings: Settings()), generator, Settings()) { Crossover = Crossover() };
+                for (int i = 0; i < 10; i++) original.Evaluate();
+            }
+
+            using var stream = new System.IO.MemoryStream();
+            original.SaveCheckpoint(stream);
+            stream.Position = 0;
+
+            // operators are code, not data: the resuming evaluator is configured with the same ones
+            var fresh = new InnovationGenerator();
+            var resumed = new SizeEvaluator(Genome.CreateMinimal(2, 1, fresh), fresh, new NeatSettings()) { Crossover = Crossover() };
+            resumed.LoadCheckpoint(stream);
+            Assert.Equal(OperatorTests.Population(original), OperatorTests.Population(resumed));
+
+            using (new SeededRandom(78))
+            {
+                for (int i = 0; i < 5; i++) original.Evaluate();
+            }
+
+            using (new SeededRandom(78))
+            {
+                for (int i = 0; i < 5; i++) resumed.Evaluate();
+            }
+
+            Assert.Equal(OperatorTests.Population(original), OperatorTests.Population(resumed));
+        }
+
         public static TheoryData<string> CrossoverNames() => new TheoryData<string> { "multipoint", "averaging", "single-point", "activation-preserving", "weighted" };
 
         [Theory]
