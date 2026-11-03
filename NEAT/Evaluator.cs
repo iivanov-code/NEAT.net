@@ -5,6 +5,7 @@ using System.Linq;
 using NEAT.Net.Abstrations;
 using NEAT.Net.Abstrations.Enums;
 using NEAT.Net.Abstrations.Interfaces;
+using NEAT.Net.Operators;
 using NEAT.Net.Serialization;
 
 namespace NEAT.Net
@@ -50,6 +51,31 @@ namespace NEAT.Net
         }
 
         public NeatSettings Settings { get; private set; }
+
+        /// <summary>
+        /// Mutations applied to every offspring, in order, each with its own probability. Starts with the mutations of
+        /// the NEAT paper: weights, new connection, new node
+        /// </summary>
+        public IList<IMutation> Mutations { get; } = new List<IMutation>
+        {
+            new WeightMutation(),
+            new AddConnectionMutation(),
+            new AddNodeMutation()
+        };
+
+        /// <summary>
+        /// Combines two parents into a crossover child; <see cref="MultipointCrossover"/> by default
+        /// </summary>
+        public ICrossover Crossover
+        {
+            get;
+            set => field = value ?? throw new ArgumentNullException(nameof(value));
+        } = new MultipointCrossover();
+
+        /// <summary>
+        /// Context the operators of the current generation work with
+        /// </summary>
+        protected EvolutionContext Context => new EvolutionContext(InnovationGenerator, Settings, Random);
         public IGenome FittestGenome { get; protected set; }
         public ICollection<IGenome> Genomes { get; private set; }
         public IInnovationGenerator InnovationGenerator { get; private set; }
@@ -214,21 +240,21 @@ namespace NEAT.Net
             nextGeneration.Clear();
         }
 
+        /// <summary>
+        /// Applies every mutation of <see cref="Mutations"/> with its probability. Mutations with probability 0 are
+        /// skipped without drawing a random number
+        /// </summary>
         protected virtual void MutateGenome(IGenome genome)
         {
-            if (Random.NextDouble() < Settings.WeightMutationRate)
-            {
-                genome.Mutate(MutationType.AllConnections, InnovationGenerator, Settings);
-            }
+            EvolutionContext context = Context;
 
-            if (Random.NextDouble() < Settings.AddConnectionRate)
+            foreach (IMutation mutation in Mutations)
             {
-                genome.Mutate(MutationType.Connection, InnovationGenerator, Settings);
-            }
-
-            if (Random.NextDouble() < Settings.AddNodeRate)
-            {
-                genome.Mutate(MutationType.Node, InnovationGenerator, Settings);
+                float probability = mutation.GetProbability(context);
+                if (probability > 0 && Random.NextDouble() < probability)
+                {
+                    mutation.Apply(genome, context);
+                }
             }
         }
 
@@ -281,7 +307,8 @@ namespace NEAT.Net
                         } while (parent2 == parent1);
                     }
 
-                    child = parent1.Crossover(parent2, Settings);
+                    var (fitter, weaker) = GenomeOperations.OrderParents(parent1, parent2, Random);
+                    child = Crossover.Cross(fitter, weaker, Context);
                 }
 
                 MutateGenome(child);

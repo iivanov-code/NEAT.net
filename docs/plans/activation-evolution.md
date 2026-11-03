@@ -105,7 +105,15 @@ The activation set and its probabilities must be configurable per run, but all p
 5. **Historical markings stay as they are:** an activation is a node attribute, like a weight is for
    a connection, so it does not get its own innovation number.
 
-## Phase 3 – Pluggable operators
+## Phase 3 – Pluggable operators – done
+
+- `IMutation.GetProbability(context)` replaced the planned fixed `Probability`, so rates keep coming from
+  `NeatSettings` and change with them during a run. A probability of 0 draws no random number.
+- Operators get an `EvolutionContext` (innovation generator, settings, random source) instead of separate
+  mutation and crossover contexts.
+- The default operators live in `NEAT/Operators`. `MultipointCrossover` has virtual `InheritMatching` and
+  `InheritNode` hooks for the crossovers of phase 5.
+- Default runs are identical to phase 2 (5 seeds × 40 XOR generations).
 
 ```csharp
 public interface IMutation
