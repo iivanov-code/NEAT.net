@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.ExceptionServices;
+using System.Threading.Tasks;
 using NEAT.Net.Abstrations;
 using NEAT.Net.Abstrations.Enums;
 using NEAT.Net.Abstrations.Interfaces;
@@ -170,14 +172,52 @@ namespace NEAT.Net
         }
 
         /// <summary>
-        /// Assigns a fitness to every genome of the current generation. Override to evaluate in parallel
+        /// Most genomes evaluated at the same time: 1 evaluates them one after the other, -1 uses every processor.
+        /// With more than one, <see cref="EvaluateGenome"/> is called from several threads at once and must not change
+        /// shared state or use <see cref="NEATUtils.Random"/>. The fitness values are assigned in population order once
+        /// all genomes are evaluated, so evolution goes exactly as when evaluating one genome after the other
+        /// </summary>
+        public int MaxDegreeOfParallelism
+        {
+            get;
+            set => field = value == -1 || value >= 1
+                ? value
+                : throw new ArgumentOutOfRangeException(nameof(value), value, "Must be -1 or at least 1");
+        } = 1;
+
+        /// <summary>
+        /// Assigns a fitness to every genome of the current generation, on up to <see cref="MaxDegreeOfParallelism"/>
+        /// threads
         /// </summary>
         public virtual void EvaluateGenomes()
         {
-            foreach (var genome in Genomes)
+            if (MaxDegreeOfParallelism == 1)
             {
-                genome.Fitness = EvaluateGenome(genome);
-                UpdateFittestGenome(genome);
+                foreach (var genome in Genomes)
+                {
+                    genome.Fitness = EvaluateGenome(genome);
+                    UpdateFittestGenome(genome);
+                }
+
+                return;
+            }
+
+            IGenome[] genomes = Genomes.ToArray();
+            var fitness = new float[genomes.Length];
+            try
+            {
+                Parallel.For(0, genomes.Length, new ParallelOptions { MaxDegreeOfParallelism = MaxDegreeOfParallelism },
+                             i => fitness[i] = EvaluateGenome(genomes[i]));
+            }
+            catch (AggregateException exception) when (exception.InnerExceptions.Count == 1)
+            {
+                ExceptionDispatchInfo.Capture(exception.InnerExceptions[0]).Throw();
+            }
+
+            for (int i = 0; i < genomes.Length; i++)
+            {
+                genomes[i].Fitness = fitness[i];
+                UpdateFittestGenome(genomes[i]);
             }
         }
 

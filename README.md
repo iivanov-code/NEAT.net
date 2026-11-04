@@ -63,6 +63,17 @@ with about 50 nodes and 120 connections each, scored on 64 cases:
 | One propagation | 7.7 µs | 2.1 µs |
 | Memory per network | 24 KB | 3.2 KB |
 
+Both network evaluators score the genomes on every processor: `EvaluateNetwork` is called from several threads at
+once, each call with its own network, so it must not change shared state or use `NEATUtils.Random`. The fitness
+values are assigned in population order after all genomes are scored, so evolution goes exactly as when scoring one
+genome after the other, on any number of processors. Set `MaxDegreeOfParallelism = 1` to score them one at a time
+(the default of a plain `Evaluator`), or another number to limit the threads. 150 genomes scored on 256 cases, 4 cores:
+
+| | One thread | All cores |
+|---|---|---|
+| `NetworkEvaluator` | 319 ms | 94 ms |
+| `CompactNetworkEvaluator` | 54 ms | 17 ms |
+
 ### Settings
 
 All parameters of a run live in `NeatSettings`. The defaults follow the NEAT paper (see `DefaultConstants`).

@@ -16,6 +16,7 @@ namespace NEAT.Net.Networks
             : base(initialGenome, innovationGenerator, populationSize)
         {
             PhenotypeSettings = phenotypeSettings ?? new PhenotypeSettings();
+            MaxDegreeOfParallelism = -1;
         }
 
         protected NetworkEvaluator(IGenome initialGenome,
@@ -25,6 +26,7 @@ namespace NEAT.Net.Networks
             : base(initialGenome, innovationGenerator, settings)
         {
             PhenotypeSettings = phenotypeSettings ?? new PhenotypeSettings();
+            MaxDegreeOfParallelism = -1;
         }
 
         public PhenotypeSettings PhenotypeSettings { get; }
@@ -35,7 +37,9 @@ namespace NEAT.Net.Networks
         }
 
         /// <summary>
-        /// Fitness of the network built from <paramref name="genome"/>; must not be negative
+        /// Fitness of the network built from <paramref name="genome"/>; must not be negative. Genomes are evaluated on
+        /// every processor (see <see cref="Evaluator.MaxDegreeOfParallelism"/>), so this is called from several threads
+        /// at once; every call gets its own network
         /// </summary>
         protected abstract float EvaluateNetwork(IGraphNetwork network, IGenome genome);
     }
