@@ -30,7 +30,7 @@ for (int seed = 0; seed < seeds; seed++)
     {
         evaluator.Evaluate();
         generation++;
-        solved = problem.IsSolved(evaluator.Outputs(evaluator.FittestGenome.ToNetwork()));
+        solved = problem.IsSolved(evaluator.Outputs(evaluator.FittestGenome.ToCompactNetwork()));
     }
 
     int hidden = evaluator.FittestGenome.ToNetwork().HiddenNodeIds.Count;

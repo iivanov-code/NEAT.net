@@ -10,7 +10,7 @@ namespace NEAT.Net.Benchmarks
     /// <summary>
     /// Fitness (n - Σ|error|)², n the number of cases, as in the XOR experiment of the NEAT paper
     /// </summary>
-    internal sealed class ProblemEvaluator : NetworkEvaluator
+    internal sealed class ProblemEvaluator : CompactNetworkEvaluator
     {
         private readonly Problem problem;
 
@@ -20,9 +20,9 @@ namespace NEAT.Net.Benchmarks
             this.problem = problem;
         }
 
-        public float[] Outputs(IGraphNetwork network) => problem.Inputs.Select(x => (float)network.Propagate(x.Select(v => (Quad)v).ToArray())[0]).ToArray();
+        public float[] Outputs(ICompactNetwork network) => problem.Inputs.Select(x => (float)network.Propagate(x.Select(v => (Quad)v).ToArray())[0]).ToArray();
 
-        protected override float EvaluateNetwork(IGraphNetwork network, IGenome genome)
+        protected override float EvaluateNetwork(ICompactNetwork network, IGenome genome)
         {
             float[] outputs = Outputs(network);
             float error = outputs.Zip(problem.Targets, (o, t) => Math.Abs(o - t)).Sum();

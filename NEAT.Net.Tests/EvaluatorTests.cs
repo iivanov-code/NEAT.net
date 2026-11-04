@@ -46,6 +46,32 @@ namespace NEAT.Net.Tests
             }
         }
 
+        private sealed class CompactXorEvaluator : CompactNetworkEvaluator
+        {
+            private static readonly float[][] inputs = { new[] { 0f, 0f }, new[] { 0f, 1f }, new[] { 1f, 0f }, new[] { 1f, 1f } };
+            private static readonly float[] targets = { 0f, 1f, 1f, 0f };
+
+            public CompactXorEvaluator(IGenome genome, IInnovationGenerator generator)
+                : base(genome, generator, 150)
+            { }
+
+            public static int Correct(ICompactNetwork network)
+            {
+                return Enumerable.Range(0, 4).Count(i => Math.Abs(network.Propagate(inputs[i][0], inputs[i][1])[0] - targets[i]) < 0.5f);
+            }
+
+            protected override float EvaluateNetwork(ICompactNetwork network, IGenome genome)
+            {
+                float error = 0;
+                for (int i = 0; i < inputs.Length; i++)
+                {
+                    error += Math.Abs(network.Propagate(inputs[i][0], inputs[i][1])[0] - targets[i]);
+                }
+
+                return (4 - error) * (4 - error);
+            }
+        }
+
         [Fact]
         public void Evaluate_KeepsThePopulationSize()
         {
@@ -91,6 +117,48 @@ namespace NEAT.Net.Tests
             IGraphNetwork best = evaluator.FittestGenome.ToNetwork();
             Assert.Equal(4, XorEvaluator.Correct(best));
             Assert.NotEmpty(best.HiddenNodeIds);
+        }
+
+        [Fact]
+        public void CompactNetworkEvaluator_SolvesXor()
+        {
+            using var seed = new SeededRandom(42);
+            var generator = new InnovationGenerator();
+            var evaluator = new CompactXorEvaluator(Genome.CreateMinimal(2, 1, generator), generator);
+
+            for (int i = 0; i < 300; i++)
+            {
+                evaluator.Evaluate();
+                if (CompactXorEvaluator.Correct(evaluator.FittestGenome.ToCompactNetwork()) == 4) break;
+            }
+
+            Assert.Equal(4, CompactXorEvaluator.Correct(evaluator.FittestGenome.ToCompactNetwork()));
+        }
+
+        [Fact]
+        public void ToCompactNetwork_ComputesWhatToNetworkComputes()
+        {
+            using var seed = new SeededRandom(7);
+            var generator = new InnovationGenerator();
+            var evaluator = new CountingEvaluator(Genome.CreateMinimal(3, 2, generator), generator, 60);
+            for (int i = 0; i < 25; i++) evaluator.Evaluate();
+
+            var random = new Random(3);
+            foreach (IGenome genome in evaluator.Genomes)
+            {
+                IGraphNetwork network = genome.ToNetwork();
+                ICompactNetwork compact = genome.ToCompactNetwork();
+                for (int sample = 0; sample < 4; sample++)
+                {
+                    Quad[] input = Enumerable.Range(0, 3).Select(_ => (Quad)((random.NextDouble() * 4) - 2)).ToArray();
+                    float[] expected = network.Propagate(input).Select(x => (float)x).ToArray();
+                    float[] actual = compact.Propagate(input).Select(x => (float)x).ToArray();
+                    for (int o = 0; o < expected.Length; o++)
+                    {
+                        Assert.True(Math.Abs(expected[o] - actual[o]) <= 1e-5f * Math.Max(1, Math.Abs(expected[o])), $"network {expected[o]}, compact {actual[o]}");
+                    }
+                }
+            }
         }
     }
 }

@@ -54,6 +54,17 @@ namespace NEAT.Net.Networks
         }
 
         /// <summary>
+        /// Inference-only network of the genome: computes what <see cref="ToNetwork"/> computes, but is compiled
+        /// straight into a few weight matrices without building neurons and synapses, so it is several times faster to
+        /// build and to evaluate and uses a fraction of the memory. It cannot be trained; use <see cref="ToNetwork"/> for
+        /// backpropagation. It keeps no state between calls, so it can be evaluated from several threads at once
+        /// </summary>
+        public static ICompactNetwork ToCompactNetwork(this IGenome genome, PhenotypeSettings settings = null)
+        {
+            return NetworkCompactor.CompactGraph(genome.ToGraphSettings(settings));
+        }
+
+        /// <summary>
         /// Writes the weights of a network, for example after training it with backpropagation, back into the
         /// genome (Lamarckian evolution). Connections the network does not contain are left unchanged
         /// </summary>
