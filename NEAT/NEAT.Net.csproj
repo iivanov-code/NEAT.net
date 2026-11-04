@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup Label="Globals">
     <SccProjectName>SAK</SccProjectName>
@@ -8,11 +8,13 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
+    <!-- ANN.Net is the sibling repository https://github.com/iivanov-code/ANN.Net checked out next to this one -->
+    <AnnNetProject Condition="'$(AnnNetProject)' == ''">$(MSBuildThisFileDirectory)..\..\ANN.Net\NeuralNetwork\ANN.Net.csproj</AnnNetProject>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\NEAT.Abstrations\NEAT.Net.Abstrations.csproj" />
+    <ProjectReference Include="$(AnnNetProject)" />
   </ItemGroup>
 
 </Project>

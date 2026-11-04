@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path=".gitignore" />
+    <File Path="CODE_OF_CONDUCT.md" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Build.targets" />
+    <File Path="LICENSE" />
+    <File Path="README.md" />
+  </Folder>
+  <Project Path="NEAT.Abstrations/NEAT.Net.Abstrations.csproj" />
+  <Project Path="NEAT.Net.Tests/NEAT.Net.Tests.csproj" />
+  <Project Path="NEAT/NEAT.Net.csproj" />
+</Solution>

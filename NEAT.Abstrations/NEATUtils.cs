@@ -1,28 +1,30 @@
 ﻿using System;
 using System.Collections.Generic;
-using NEAT.Net.Abstrations;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
+using System.Threading;
 
 namespace NEAT.Net.Abstrations
 {
+    [SuppressMessage("Minor Code Smell", "S101:Types should be named in PascalCase", Justification = "Public API named after the NEAT acronym")]
     public static class NEATUtils
     {
-        private static object idPadlock = new object();
-        private static uint Id = 0;
+        private static int id = -1;
+
+        /// <summary>
+        /// Random source used by the algorithm. Defaults to the thread-safe <see cref="System.Random.Shared"/>;
+        /// assign a seeded instance for reproducible runs (it must then be used from a single thread)
+        /// </summary>
+        public static Random Random { get; set; } = Random.Shared;
+
         public static uint NewID()
         {
-            uint id = Id;
-            lock (idPadlock)
-            {
-                Id++;
-            }
-
-            return id;
+            return (uint)Interlocked.Increment(ref id);
         }
 
         public static TValue GetValueOrDefault<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key)
         {
-            var readonlyDictionary = dictionary as IReadOnlyDictionary<TKey, TValue>;
-            return readonlyDictionary.GetValueOrDefault(key);
+            return dictionary.TryGetValue(key, out TValue value) ? value : default;
         }
 
         public static void Swap<T>(ref T first, ref T second)
@@ -32,30 +34,32 @@ namespace NEAT.Net.Abstrations
             second = temp;
         }
 
+        /// <summary>
+        /// Uniform random number in [minimum, maximum)
+        /// </summary>
+        public static float NextFloat(this Random rand, float minimum, float maximum)
+        {
+            return (float)((rand.NextDouble() * (maximum - minimum)) + minimum);
+        }
+
         public static float GetRandomNumber(this Random rand, float minimum, float maximum, int decimals = 2)
         {
-            float value = (float)(rand.NextDouble() * (maximum - minimum) + minimum);
-            return (float)Math.Round(value, decimals, MidpointRounding.AwayFromZero);
+            return (float)Math.Round(rand.NextFloat(minimum, maximum), decimals, MidpointRounding.AwayFromZero);
         }
 
         public static bool GetRandomBool(this Random rand)
         {
-            return rand.GetRandomNumber(0, 1) > 0.5f ? true : false;
+            return rand.Next(2) == 0;
         }
 
         public static TValue GetElementAt<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, int index)
         {
-            var enumerator = dictionary.GetEnumerator();
-            enumerator.MoveNext();
-            int counter = 0;
+            return dictionary.Values.ElementAt(index);
+        }
 
-            while (counter == index)
-            {
-                counter++;
-                enumerator.MoveNext();
-            }
-
-            return enumerator.Current.Value;
+        public static T RandomElement<T>(this IReadOnlyList<T> list, Random rand)
+        {
+            return list[rand.Next(list.Count)];
         }
     }
 }
