@@ -1,0 +1,35 @@
+﻿<Project>
+    <!-- Static code analyzers, shared with ANN.Net. PrivateAssets=all keeps them out of the produced NuGet packages. -->
+    <ItemGroup>
+        <!-- Logic/bug detection and security hotspots. -->
+        <PackageReference Include="SonarAnalyzer.CSharp" Version="10.33.0.1635" PrivateAssets="all" />
+        <!-- Correctness, API usage and performance rules. -->
+        <PackageReference Include="Meziantou.Analyzer" Version="3.0.177" PrivateAssets="all" />
+        <!-- Async/await misuse (fire-and-forget, async void, unnecessary state machines). -->
+        <PackageReference Include="AsyncFixer" Version="2.1.0" PrivateAssets="all" />
+    </ItemGroup>
+
+    <!-- Common build settings. Individual projects can override any of these. -->
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <!-- ANN.Net (https://github.com/iivanov-code/ANN.Net) checked out next to this repository; override to point elsewhere -->
+        <AnnNetRoot Condition="'$(AnnNetRoot)' == ''">$(MSBuildThisFileDirectory)..\ANN.Net\</AnnNetRoot>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <!-- Disable warnings for missing or misplaced XML doc comments. -->
+        <NoWarn>$(NoWarn);CS1591;CS1573;CS1587;CS1570</NoWarn>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <!-- Enable .NET analyzers -->
+        <EnableNETAnalyzers>true</EnableNETAnalyzers>
+
+        <!-- Analysis level -->
+        <AnalysisLevel>latest</AnalysisLevel>
+
+        <!-- Run analyzers during build -->
+        <RunAnalyzersDuringBuild>true</RunAnalyzersDuringBuild>
+
+        <!-- Run analyzers live in IDE -->
+        <RunAnalyzersDuringLiveAnalysis>true</RunAnalyzersDuringLiveAnalysis>
+    </PropertyGroup>
+</Project>

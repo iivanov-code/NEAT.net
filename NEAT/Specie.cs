@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using NEAT.Net.Abstrations;
@@ -10,32 +11,35 @@ namespace NEAT.Net
     {
         public Specie(IGenome genome)
         {
-            Genomes = new List<IGenome>();
-            Genomes.Add(genome);
+            Genomes = new List<IGenome> { genome };
             Mascot = genome;
+            BestFitness = float.MinValue;
+        }
+
+        /// <summary>
+        /// Restores a specie from a checkpoint
+        /// </summary>
+        internal Specie(IGenome mascot, IEnumerable<IGenome> members, float bestFitness, int stagnation)
+        {
+            Genomes = new List<IGenome>(members);
+            Mascot = mascot;
+            BestFitness = bestFitness;
+            Stagnation = stagnation;
         }
 
         public IGenome this[int index] => Genomes[index];
 
         public IList<IGenome> Genomes { get; private init; }
 
-        public float AverageFitness
-        {
-            get
-            {
-                if (Genomes.Any())
-                {
-                    return Genomes.Average(x => x.Fitness);
-                }
-                else
-                {
-                    return 0;
-                }
-            }
-        }
+        public float AverageFitness => Genomes.Count > 0 ? Genomes.Average(x => x.Fitness) : 0f;
 
-        public IGenome FittestGenome { get; private set; }
-        public IGenome Mascot { get; private init; }
+        public IGenome FittestGenome => Genomes.Count > 0 ? Genomes.MaxBy(x => x.Fitness) : null;
+
+        public IGenome Mascot { get; private set; }
+
+        public float BestFitness { get; private set; }
+
+        public int Stagnation { get; private set; }
 
         public int Count => Genomes.Count;
 
@@ -44,27 +48,54 @@ namespace NEAT.Net
             return Genomes.GetEnumerator();
         }
 
-        public bool TryAddGenome(IGenome genome, float dt = DefaultConstants.DT, float c1 = DefaultConstants.C1, float c2 = DefaultConstants.C2, float c3 = DefaultConstants.C3)
+        public bool TryAddGenome(IGenome genome, float dt = DefaultConstants.DT, float c1 = DefaultConstants.C1, float c2 = DefaultConstants.C2, float c3 = DefaultConstants.C3, float c4 = 0)
         {
-            if (Mascot.CompatibilityDistance(genome) < dt)
+            if (Mascot.CompatibilityDistance(genome, c1, c2, c3, c4) < dt)
             {
                 Genomes.Add(genome);
-                genome.FitnessAssigned += Genome_FitnessAssigned;
                 return true;
+            }
+
+            return false;
+        }
+
+        public bool TryAddGenome(IGenome genome, NeatSettings settings)
+        {
+            ArgumentNullException.ThrowIfNull(settings);
+
+            if (Mascot.CompatibilityDistance(genome, settings) < settings.CompatibilityThreshold)
+            {
+                Genomes.Add(genome);
+                return true;
+            }
+
+            return false;
+        }
+
+        public void UpdateStagnation()
+        {
+            IGenome fittest = FittestGenome;
+            if (fittest == null) return;
+
+            if (fittest.Fitness > BestFitness)
+            {
+                BestFitness = fittest.Fitness;
+                Stagnation = 0;
             }
             else
             {
-                return false;
+                Stagnation++;
             }
-
         }
 
-        private void Genome_FitnessAssigned(object sender, FitnessAssignedEventArgs e)
+        public void StartNewGeneration(Random random)
         {
-            if (FittestGenome == null || e.Genome.Fitness > FittestGenome.Fitness)
+            if (Genomes.Count > 0)
             {
-                FittestGenome = e.Genome;
+                Mascot = Genomes[random.Next(Genomes.Count)];
             }
+
+            Genomes.Clear();
         }
 
         IEnumerator IEnumerable.GetEnumerator()

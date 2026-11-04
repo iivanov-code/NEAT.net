@@ -4,7 +4,8 @@ using System.Linq;
 using NEAT.Net.Abstrations;
 using NEAT.Net.Abstrations.Enums;
 using NEAT.Net.Abstrations.Interfaces;
-using NEAT.Net.Models;
+using NEAT.Net.Operators;
+using ActivationTypes = ANN.Net.Abstractions.Enums.ActivationTypes;
 
 namespace NEAT.Net
 {
@@ -17,6 +18,62 @@ namespace NEAT.Net
             Connections = new Dictionary<uint, IConnectionGene>();
         }
 
+        /// <summary>
+        /// Minimal starting genome: every input (and the bias) connected directly to every output, without hidden nodes.
+        /// Outputs get an activation of <see cref="NeatSettings.OutputActivations"/>
+        /// </summary>
+        public static Genome CreateMinimal(int inputsCount, int outputsCount, IInnovationGenerator generator, bool withBias = true, NeatSettings settings = null)
+        {
+            settings ??= DefaultSettings;
+            if (inputsCount <= 0) throw new ArgumentOutOfRangeException(nameof(inputsCount));
+            if (outputsCount <= 0) throw new ArgumentOutOfRangeException(nameof(outputsCount));
+            if (generator == null) throw new ArgumentNullException(nameof(generator));
+
+            Genome genome = new Genome();
+            var sources = new List<INodeGene>();
+            var outputs = new List<INodeGene>();
+
+            for (int i = 0; i < inputsCount; i++)
+            {
+                sources.Add(genome.AddNode(generator.NewNodeInnovationNumber(), NodeType.Input));
+            }
+
+            if (withBias)
+            {
+                sources.Add(genome.AddNode(generator.NewNodeInnovationNumber(), NodeType.Bias));
+            }
+
+            for (int i = 0; i < outputsCount; i++)
+            {
+                outputs.Add(genome.AddNode(generator.NewNodeInnovationNumber(), NodeType.Output, GenomeOperations.PickActivation(settings.OutputActivations, NEATUtils.Random)));
+            }
+
+            foreach (INodeGene from in sources)
+            {
+                foreach (INodeGene to in outputs)
+                {
+                    uint innovation = generator.GetConnectionInnovationNumber(from.Innovation, to.Innovation);
+                    genome.Connections.Add(innovation, new ConnectionGene(innovation, from, to, GenomeOperations.RandomWeight(settings, NEATUtils.Random)));
+                }
+            }
+
+            return genome;
+        }
+
+        /// <summary>
+        /// Used by the overloads without settings
+        /// </summary>
+        private static readonly NeatSettings DefaultSettings = new NeatSettings();
+
+        // the operators behind Mutate and Crossover
+        private static readonly IMutation Weights = new WeightMutation();
+        private static readonly IMutation AddConnection = new AddConnectionMutation();
+        private static readonly IMutation SplitConnection = new AddNodeMutation();
+        private static readonly IMutation ChangeActivation = new ActivationMutation();
+        private static readonly IMutation ToggleEnable = new ToggleEnableMutation();
+        private static readonly IMutation RemoveConnection = new RemoveConnectionMutation();
+        private static readonly IMutation RemoveNode = new RemoveNodeMutation();
+        private static readonly ICrossover DefaultCrossover = new MultipointCrossover();
 
         private event EventHandler<FitnessAssignedEventArgs> fitnessAssigned;
         public event EventHandler<FitnessAssignedEventArgs> FitnessAssigned
@@ -49,18 +106,23 @@ namespace NEAT.Net
 
         public uint ID { get; private init; }
         public IDictionary<uint, INodeGene> Nodes { get; private set; }
+
+        /// <summary>
+        /// Deep copy with a new <see cref="ID"/>; the connections of the copy point to the nodes of the copy
+        /// </summary>
         public IGenome Clone()
         {
             Genome genome = new Genome();
-
-            foreach (var connection in Connections.Values)
-            {
-                genome.Connections.Add(connection.Innovation, connection.Clone());
-            }
+            genome.fitness = fitness;
 
             foreach (var node in Nodes.Values)
             {
                 genome.Nodes.Add(node.Innovation, node.Clone());
+            }
+
+            foreach (var connection in Connections.Values)
+            {
+                genome.Connections.Add(connection.Innovation, GenomeOperations.CopyConnection(genome, connection));
             }
 
             return genome;
@@ -68,63 +130,41 @@ namespace NEAT.Net
 
         public int CompareTo(IGenome other)
         {
-            float distance = Fitness - other.Fitness;
-
-            if (distance > 0)
-            {
-                return 1; //this genome is more fit than the other
-            }
-            else if (distance < 0)
-            {
-                return -1; //this genome is less fit than the other
-            }
-            else
-            {
-                return 0; //Both genomes are equal
-            }
+            return Fitness.CompareTo(other.Fitness);
         }
 
         /// <summary>
-        /// C1*E + C2*D + C3*W
-        ///  N      N
+        /// δ = c1*E/N + c2*D/N + c3*W + c4*A/Nn, where E and D are the excess and disjoint connection genes, W the
+        /// average weight difference of the matching genes, N the number of connection genes in the larger genome,
+        /// A the number of nodes both genomes have with different activations and Nn the number of node genes in the
+        /// larger genome (N and Nn are 1 for small genomes)
         /// </summary>
-        /// <param name="other"></param>
-        /// <returns></returns>
-        public float CompatibilityDistance(IGenome other, float c1 = DefaultConstants.C1, float c2 = DefaultConstants.C2, float c3 = DefaultConstants.C3)
+        public float CompatibilityDistance(IGenome other, float c1 = DefaultConstants.C1, float c2 = DefaultConstants.C2, float c3 = DefaultConstants.C3, float c4 = 0)
         {
+            return CompatibilityDistance(other, c1, c2, c3, c4, DefaultConstants.SMALL_GENOME_SIZE);
+        }
+
+        public float CompatibilityDistance(IGenome other, NeatSettings settings)
+        {
+            ArgumentNullException.ThrowIfNull(settings);
+            return CompatibilityDistance(other, settings.ExcessCoefficient, settings.DisjointCoefficient, settings.WeightDifferenceCoefficient,
+                                         settings.ActivationDifferenceCoefficient, settings.SmallGenomeSize);
+        }
+
+        private float CompatibilityDistance(IGenome other, float c1, float c2, float c3, float c4, int smallGenomeSize)
+        {
+            if (other == null) throw new ArgumentNullException(nameof(other));
+
             int matchingGenes = 0, disjointGenes = 0, excessGenes = 0;
+            float weightDifference = 0f;
 
-            int numberGenes = Math.Max(Nodes.Count + Connections.Count, other.Connections.Count + Connections.Count);
-
-            if (numberGenes < 20) numberGenes = 1;
-
-            float avgWeightDistance = 0f;
-
-            foreach (var geneDesrc in GetGeneTypes(Connections, other.Connections))
-            {
-                switch (geneDesrc.GeneType)
-                {
-                    case GeneType.Matching:
-                        matchingGenes++;
-                        avgWeightDistance += Math.Abs(geneDesrc.Gene.Weight - geneDesrc.MatchingGene.Weight);
-                        break;
-                    case GeneType.Disjoint:
-                        disjointGenes++;
-                        break;
-                    case GeneType.Excess:
-                        excessGenes++;
-                        break;
-                }
-            }
-
-            avgWeightDistance = avgWeightDistance / matchingGenes;
-
-            foreach (var gene in GetGeneTypes(Nodes, other.Nodes))
+            foreach (var gene in GenomeOperations.AlignGenes(Connections, other.Connections))
             {
                 switch (gene.GeneType)
                 {
                     case GeneType.Matching:
                         matchingGenes++;
+                        weightDifference += Math.Abs(gene.First.Weight - gene.Second.Weight);
                         break;
                     case GeneType.Disjoint:
                         disjointGenes++;
@@ -135,212 +175,79 @@ namespace NEAT.Net
                 }
             }
 
-            return c1 * excessGenes / numberGenes + c2 * disjointGenes / numberGenes + c3 * avgWeightDistance;
+            int numberGenes = Math.Max(Connections.Count, other.Connections.Count);
+            if (numberGenes < smallGenomeSize) numberGenes = 1;
+
+            float averageWeightDifference = matchingGenes > 0 ? weightDifference / matchingGenes : 0f;
+
+            float distance = (c1 * excessGenes / numberGenes) + (c2 * disjointGenes / numberGenes) + (c3 * averageWeightDifference);
+
+            if (c4 > 0)
+            {
+                int differentActivations = Nodes.Values.Count(x => other.Nodes.TryGetValue(x.Innovation, out INodeGene node) && node.Activation != x.Activation);
+                int numberNodes = Math.Max(Nodes.Count, other.Nodes.Count);
+                if (numberNodes < smallGenomeSize) numberNodes = 1;
+
+                distance += c4 * differentActivations / numberNodes;
+            }
+
+            return distance;
         }
 
+        /// <summary>
+        /// Matching genes are inherited randomly from either parent, disjoint and excess genes from the fitter parent
+        /// (from a random one when both are equally fit). The child has the topology of that parent, so it stays acyclic
+        /// </summary>
         public IGenome Crossover(IGenome other)
         {
-            Genome childGenome = new Genome();
+            return Crossover(other, DefaultSettings);
+        }
 
-            IGenome fittest = Fitness > other.Fitness ? this : other;
-            other = Fitness < other.Fitness ? this : other;
+        /// <inheritdoc cref="Crossover(IGenome)"/>
+        public IGenome Crossover(IGenome other, NeatSettings settings)
+        {
+            if (other == null) throw new ArgumentNullException(nameof(other));
+            ArgumentNullException.ThrowIfNull(settings);
 
-            foreach (var node in fittest.Nodes)
-            {
-                childGenome.Nodes.Add(node.Key, node.Value.Clone());
-            }
-
-            Random random = new Random();
-
-            foreach (var gene in GetGeneTypes(fittest.Connections, other.Connections).Where(x => x.Fittest))
-            {
-                var connection = gene.Gene.Clone();
-                connection.Input = childGenome.Nodes.GetValueOrDefault(connection.Input.Innovation);
-                connection.Output = childGenome.Nodes.GetValueOrDefault(connection.Output.Innovation);
-
-                if (gene.GeneType == GeneType.Matching && !gene.Gene.Enabled && !gene.MatchingGene.Enabled)
-                {
-                    if (random.GetRandomNumber(0, 1) > DefaultConstants.DISABLED_WEIGHT_CHANCE)
-                    {
-                        connection.Enable();
-                    }
-                }
-
-                childGenome.Connections.Add(gene.Gene.Innovation, connection);
-            }
-
-            return childGenome;
+            var context = new EvolutionContext(null, settings, NEATUtils.Random);
+            var (fitter, weaker) = GenomeOperations.OrderParents(this, other, context.Random);
+            return DefaultCrossover.Cross(fitter, weaker, context);
         }
 
         public void Mutate(MutationType mutationType, IInnovationGenerator generator)
         {
-            switch (mutationType)
-            {
-                case MutationType.Connection:
-                    AddConnectionMutation(generator);
-                    break;
-                case MutationType.Node:
-                    AddNodeMutation(generator);
-                    break;
-                case MutationType.AllConnections:
-                    MutateAllConnections();
-                    break;
-                default:
-                    throw new ArgumentException(nameof(mutationType));
-            }
+            Mutate(mutationType, generator, DefaultSettings);
         }
 
-        private static IEnumerable<GeneCompareType<TValue>> GetGeneTypes<TValue>(IDictionary<uint, TValue> fittest, IDictionary<uint, TValue> other)
-            where TValue : IHistoricalMarking
+        public void Mutate(MutationType mutationType, IInnovationGenerator generator, NeatSettings settings)
         {
-            uint firstMax = fittest.Select(x => x.Key).Max();
-            uint secondMax = other.Select(x => x.Key).Max();
+            ArgumentNullException.ThrowIfNull(settings);
 
-            uint max = Math.Max(firstMax, secondMax);
-            uint min = Math.Min(fittest.Select(x => x.Key).Min(), other.Select(x => x.Key).Min());
-
-            uint minMax = Math.Min(firstMax, secondMax);
-
-            Random random = new Random();
-
-            for (uint i = min; i < max; i++)
+            IMutation mutation = mutationType switch
             {
-                TValue firstGene = fittest.GetValueOrDefault(i);
-                TValue secondGene = other.GetValueOrDefault(i);
+                MutationType.Connection => AddConnection,
+                MutationType.Node => SplitConnection,
+                MutationType.AllConnections => Weights,
+                MutationType.Activation => ChangeActivation,
+                MutationType.ToggleEnable => ToggleEnable,
+                MutationType.RemoveConnection => RemoveConnection,
+                MutationType.RemoveNode => RemoveNode,
+                _ => throw new ArgumentException("Unknown mutation type", nameof(mutationType))
+            };
 
-                if (firstGene != null || secondGene != null)
-                {
-                    if (firstGene != null && secondGene != null)
-                    {
-                        var geneDescr = new GeneCompareType<TValue>
-                        {
-                            GeneType = GeneType.Matching,
-                            Fittest = true,
-                        };
-
-                        if (random.GetRandomBool())
-                        {
-                            geneDescr.Gene = firstGene;
-                            geneDescr.MatchingGene = secondGene;
-                        }
-                        else
-                        {
-                            geneDescr.Gene = secondGene;
-                            geneDescr.MatchingGene = firstGene;
-                        }
-
-                        yield return geneDescr;
-                    }
-                    else if (firstGene != null && i < minMax) //fittest genome disjoint gene
-                    {
-                        yield return new GeneCompareType<TValue>
-                        {
-                            GeneType = GeneType.Disjoint,
-                            Gene = firstGene,
-                            Fittest = true,
-                        };
-                    }
-                    else if (secondGene != null && i < minMax) //less fit genome disjoint gene
-                    {
-                        yield return new GeneCompareType<TValue>
-                        {
-                            GeneType = GeneType.Disjoint,
-                            Gene = secondGene,
-                            Fittest = false,
-                        };
-                    }
-                    else if (firstGene != null && i > minMax) //fittest genome excess gene
-                    {
-                        yield return new GeneCompareType<TValue>
-                        {
-                            GeneType = GeneType.Excess,
-                            Gene = firstGene,
-                            Fittest = true
-                        };
-                    }
-                    else if (secondGene != null && i > minMax) //less fit genome excess gene
-                    {
-                        yield return new GeneCompareType<TValue>
-                        {
-                            GeneType = GeneType.Excess,
-                            Gene = secondGene,
-                            Fittest = false
-                        };
-                    }
-                }
-            }
+            mutation.Apply(this, new EvolutionContext(generator, settings, NEATUtils.Random));
         }
 
-        private void AddConnectionMutation(IInnovationGenerator generator)
+        private INodeGene AddNode(uint innovation, NodeType type, ActivationTypes? activation = null)
         {
-            Random rand = new Random();
-            INodeGene fromNode = Nodes.GetElementAt(rand.Next(0, Nodes.Count));
-            INodeGene toNode = null;
-
-            do
-            {
-                toNode = Nodes.GetElementAt(rand.Next(0, Nodes.Count));
-            } while (fromNode == toNode || fromNode.Type == toNode.Type);
-
-            bool hasConnection = Connections.Where(x => x.Value.Input.Innovation == fromNode.Innovation && x.Value.Output.Innovation == toNode.Innovation
-              || x.Value.Input.Innovation == toNode.Innovation && x.Value.Output.Innovation == fromNode.Innovation).Any();
-
-            if (!hasConnection)
-            {
-                if (fromNode.Type > toNode.Type)
-                {
-                    NEATUtils.Swap(ref fromNode, ref toNode);
-                }
-
-                float weight = new Random().GetRandomNumber(0, 1);
-                IConnectionGene connection = new ConnectionGene(generator.GetConnectionInnovationNumber(fromNode.Innovation, toNode.Innovation), fromNode, toNode, weight);
-                Connections.Add(connection.Innovation, connection);
-            }
-        }
-
-        private void AddNodeMutation(IInnovationGenerator generator)
-        {
-            INodeGene newNode = new NodeGene((uint)Nodes.Count, NodeType.Hidden);
-            var random = new Random();
-            int index = random.Next(0, Connections.Count);
-            IConnectionGene connection = Connections.GetElementAt(index);
-
-            connection.Disable();
-
-            uint innovation = generator.GetConnectionInnovationNumber(connection.Input.Innovation, newNode.Innovation);
-            IConnectionGene fromConnection = new ConnectionGene(innovation, connection.Input, newNode, 1f);
-            Connections.Add(fromConnection.Innovation, fromConnection);
-
-            innovation = generator.GetConnectionInnovationNumber(newNode.Innovation, connection.Output.Innovation);
-            IConnectionGene toConnection = new ConnectionGene(innovation, newNode, connection.Output, random.GetRandomNumber(0, 1));
-            Connections.Add(toConnection.Innovation, toConnection);
-
-            Nodes.Add(newNode.Innovation, newNode);
+            INodeGene node = new NodeGene(innovation, type, activation);
+            Nodes.Add(innovation, node);
+            return node;
         }
 
         private void OnFitnessAssinged()
         {
-            if (fitnessAssigned != null)
-            {
-                fitnessAssigned(this, new FitnessAssignedEventArgs(this));
-            }
-        }
-
-        private void MutateAllConnections()
-        {
-            Random random = new Random();
-            foreach (var connection in Connections.Select(x => x.Value))
-            {
-                if (random.GetRandomNumber(0, 1) < DefaultConstants.PERTURBED_CHANCE)
-                {
-                    float distance = 1 - Math.Abs(connection.Weight);
-                    connection.Weight += random.GetRandomNumber(-1 * distance, distance);
-                }
-                else
-                {
-                    connection.Weight = random.GetRandomNumber(0, 1);
-                }
-            }
+            fitnessAssigned?.Invoke(this, new FitnessAssignedEventArgs(this));
         }
     }
 }

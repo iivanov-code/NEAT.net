@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup Label="Globals">
     <SccProjectName>SAK</SccProjectName>
@@ -8,11 +8,12 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
+    <AnnNetProject Condition="'$(AnnNetProject)' == ''">$(AnnNetRoot)NeuralNetwork\ANN.Net.csproj</AnnNetProject>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\NEAT.Abstrations\NEAT.Net.Abstrations.csproj" />
+    <ProjectReference Include="$(AnnNetProject)" />
   </ItemGroup>
 
 </Project>

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup Label="Globals">
 		<SccProjectName>SAK</SccProjectName>
@@ -8,7 +8,12 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<TargetFramework>net5.0</TargetFramework>
+		<AnnNetAbstractionsProject Condition="'$(AnnNetAbstractionsProject)' == ''">$(AnnNetRoot)ANN.Net.Abstractions\ANN.Net.Abstractions.csproj</AnnNetAbstractionsProject>
 	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- activation functions of node genes are ANN.Net's ActivationTypes -->
+		<ProjectReference Include="$(AnnNetAbstractionsProject)" />
+	</ItemGroup>
 
 </Project>
