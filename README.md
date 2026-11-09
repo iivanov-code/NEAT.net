@@ -1,4 +1,4 @@
-# NEAT.net
+﻿# NEAT.net
 C# implementation of NeuroEvolution of Augmenting Topologies (NEAT) algorithm
 
 <p align = "center">
@@ -73,6 +73,39 @@ genome after the other, on any number of processors. Set `MaxDegreeOfParallelism
 |---|---|---|
 | `NetworkEvaluator` | 319 ms | 94 ms |
 | `CompactNetworkEvaluator` | 54 ms | 17 ms |
+
+### Spiking networks
+
+Derive from `SpikingNetworkEvaluator` to evolve spiking networks directly, with no analog network trained and
+converted first:
+
+```csharp
+class SpikingXorEvaluator : SpikingNetworkEvaluator
+{
+    public SpikingXorEvaluator(IGenome genome, IInnovationGenerator generator) : base(genome, generator, 150) { }
+
+    protected override float EvaluateNetwork(ISpikingNetwork network, IGenome genome)
+    {
+        float error = 0;
+        for (int i = 0; i < 4; i++) error += Math.Abs(network.Propagate(inputs[i])[0] - targets[i]);   // firing rates
+        return (4 - error) * (4 - error);
+    }
+}
+```
+
+`genome.ToSpikingNetwork(settings)` (used by the evaluator) makes every input an integrate-and-fire neuron fed with the
+input value in every time step, and every hidden and output node a spiking neuron whose spike function follows its
+activation gene: integrate-and-fire for ReLU, a neuron with negative spikes for leaky ReLU and the identity, the
+sigmoid rate neuron for sigmoid and tanh (`SpikingPhenotypeSettings.Activation` chooses others). Nodes are layered by
+depth, so every connection goes forward and a spike crosses the network within one time step; bias connections become
+a constant input current. The outputs are the firing rates of the output nodes over `TimeSteps` steps (20 by
+default). On XOR with 150 genomes, 10 seeds, spiking networks needed a median of 100 generations
+(`CompactNetworkEvaluator`: 104) and solved 8 of the 10 seeds within 500 generations (`CompactNetworkEvaluator`: 10).
+
+With `SpikingPhenotypeSettings.Learn` a network can also change its weights with spike-timing-dependent plasticity
+while it is evaluated (`network.Learn(input)`), and `genome.ApplyWeights(network, settings)` writes the learned weights
+back into the genome (Lamarckian evolution). Every network keeps the state of its neurons, so each evaluation gets
+its own and genomes are scored on every processor as with the other evaluators.
 
 ### Settings
 
