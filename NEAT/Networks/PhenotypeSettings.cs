@@ -1,5 +1,6 @@
 ﻿using ANN.Net.Abstractions.Enums;
 using ANN.Net.Abstractions.Interfaces;
+using ANN.Net.Abstractions.Settings;
 
 namespace NEAT.Net.Networks
 {
@@ -27,7 +28,15 @@ namespace NEAT.Net.Networks
         /// </summary>
         public OptimizerTypes OptimizerType { get; set; } = OptimizerTypes.Normal;
 
+        /// <summary>
+        /// Loss the network trains on when it is also trained with backpropagation
+        /// </summary>
         public LossFunctionTypes LossType { get; set; } = LossFunctionTypes.Squared;
+
+        /// <summary>
+        /// Parameters of the loss, such as δ of the Huber loss; null for the defaults
+        /// </summary>
+        public LossOptions LossOptions { get; set; }
 
         public bool OutputApplySoftMax { get; set; }
 

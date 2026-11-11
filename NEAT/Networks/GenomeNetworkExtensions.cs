@@ -40,6 +40,7 @@ namespace NEAT.Net.Networks
                 OutputActivationType = settings.OutputActivationType,
                 OptimizerType = settings.OptimizerType,
                 LossType = settings.LossType,
+                LossOptions = settings.LossOptions,
                 OutputApplySoftMax = settings.OutputApplySoftMax,
                 IdentityGenerator = settings.IdentityGenerator
             };
