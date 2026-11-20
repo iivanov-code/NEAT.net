@@ -103,6 +103,21 @@ namespace NEAT.Net.Tests
             Assert.Equal(setting, exception.ParamName);
         }
 
+        [Theory]
+        [InlineData(nameof(NeatSettings.HiddenActivations))]
+        [InlineData(nameof(NeatSettings.OutputActivations))]
+        public void Validate_RejectsSoftMax_PointingToOutputApplySoftMax(string setting)
+        {
+            var settings = new NeatSettings();
+            var activations = new[] { ActivationTypes.Sigmoid, ActivationTypes.SoftMax };
+            if (setting == nameof(NeatSettings.HiddenActivations)) settings.HiddenActivations = activations;
+            else settings.OutputActivations = activations;
+
+            ArgumentException exception = Assert.ThrowsAny<ArgumentException>(settings.Validate);
+            Assert.Equal(setting, exception.ParamName);
+            Assert.Contains("OutputApplySoftMax", exception.Message, StringComparison.Ordinal);
+        }
+
         [Fact]
         public void Evaluator_RejectsInvalidSettings_AtStartAndBeforeEveryGeneration()
         {

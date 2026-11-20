@@ -232,6 +232,10 @@ namespace NEAT.Net.Abstrations
 
             foreach (ActivationTypes activation in activations)
             {
+                if (activation == ActivationTypes.SoftMax)
+                    throw new ArgumentException($"{activation} is a whole-layer operation and cannot be a node activation; "
+                                                + "set PhenotypeSettings.OutputApplySoftMax instead", name);
+
                 if (!Enum.IsDefined(activation) || activation == ActivationTypes.BReLU)
                     throw new ArgumentException($"{activation} cannot be evolved", name);
             }
