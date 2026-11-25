@@ -110,7 +110,7 @@ namespace NEAT.Net.Tests
         {
             var settings = new NeatSettings();
             var activations = new[] { ActivationTypes.Sigmoid, ActivationTypes.SoftMax };
-            if (setting == nameof(NeatSettings.HiddenActivations)) settings.HiddenActivations = activations;
+            if (string.Equals(setting, nameof(NeatSettings.HiddenActivations), StringComparison.Ordinal)) settings.HiddenActivations = activations;
             else settings.OutputActivations = activations;
 
             ArgumentException exception = Assert.ThrowsAny<ArgumentException>(settings.Validate);
